@@ -1,0 +1,16 @@
+{
+    "python.terminal.activateEnvironment": false,
+    "python.terminal.activateEnvInCurrentTerminal": false,
+    "terminal.integrated.profiles.windows": {
+        "PowerShell (crud-system venv)": {
+            "source": "PowerShell",
+            "args": [
+                "-NoExit",
+                "-Command",
+                "& 'c:/laragon/www/crud-system/venv/Scripts/Activate.ps1'"
+            ]
+        }
+    },
+    "terminal.integrated.defaultProfile.windows": "PowerShell (crud-system venv)",
+    "powershell.integratedConsole.showOnStartup": false
+}
