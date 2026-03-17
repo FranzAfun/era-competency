@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment - ERA AXIS{% endblock %}
+
+{% block content %}
+<div class="w-full max-w-2xl mx-auto">
+    <div class="bg-brand-card rounded-brand p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
+        <h2 class="text-white text-2xl font-semibold mb-6">{{ question.text }}</h2>
+
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+
+            {% if error %}
+                <p class="text-brand-error text-sm">{{ error }}</p>
+            {% endif %}
+
+            {% for option in question.options.all %}
+                <label class="flex items-start gap-3 text-brand-text-muted cursor-pointer">
+                    <input type="radio" name="option" value="{{ option.id }}" class="mt-1 accent-brand-primary" {% if forloop.first %}required{% endif %}>
+                    <span>{{ option.text }}</span>
+                </label>
+            {% endfor %}
+
+            <button type="submit" class="w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-3 px-6 rounded-brand-input transition-all duration-200 uppercase">
+                Next
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

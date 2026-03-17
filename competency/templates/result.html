@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Result - ERA AXIS{% endblock %}
+
+{% block content %}
+<div class="w-full max-w-xl mx-auto">
+    <div class="bg-brand-card rounded-brand p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
+        <h1 class="text-white text-3xl font-semibold mb-6">Result</h1>
+
+        <p class="text-brand-text-muted mb-3">Score: <span class="text-white">{{ score }}%</span></p>
+        <p class="text-brand-text-muted mb-3">Correct: <span class="text-white">{{ correct }}</span></p>
+        <p class="text-brand-text-muted">Total: <span class="text-white">{{ total }}</span></p>
+    </div>
+</div>
+{% endblock %}

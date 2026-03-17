@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - ERA AXIS{% endblock %}
+
+{% block content %}
+<div class="w-full max-w-2xl mx-auto">
+    <div class="bg-brand-card rounded-brand p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
+        <h1 class="text-white text-3xl font-semibold mb-6">Welcome, {{ user.name }}</h1>
+
+        <div class="space-y-4 mb-6 text-brand-text-muted">
+            <p><span class="text-white font-medium">Role:</span> {{ user.role }}</p>
+            <p><span class="text-white font-medium">Date:</span> {{ user.date }}</p>
+        </div>
+
+        <a href="/assessment/" class="inline-flex w-full sm:w-auto items-center justify-center bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-4 px-6 rounded-brand-input transition-all duration-200 uppercase">
+            Start Assessment
+        </a>
+
+        <div class="mt-4">
+            <a href="{% url 'logout' %}" class="inline-flex items-center justify-center text-sm font-medium text-brand-text-muted border border-brand-border rounded-brand-input px-4 py-2 hover:text-white hover:border-brand-text-muted transition-colors">
+                Logout
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
