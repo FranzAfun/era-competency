@@ -8,13 +8,36 @@
         <h1 class="text-white text-3xl font-semibold mb-6">Welcome, {{ user.name }}</h1>
 
         <div class="space-y-4 mb-6 text-brand-text-muted">
+            <p><span class="text-white font-medium">Email:</span> {{ user.email }}</p>
             <p><span class="text-white font-medium">Role:</span> {{ user.role }}</p>
             <p><span class="text-white font-medium">Date:</span> {{ user.date }}</p>
+
+            {% if is_completed %}
+                <p><span class="text-white font-medium">Status:</span> All 4 stages completed</p>
+            {% else %}
+                <p><span class="text-white font-medium">Current Stage:</span> {{ next_stage_label }}</p>
+            {% endif %}
+
+            {% if latest_assessment %}
+                <p>
+                    <span class="text-white font-medium">Last Attempt:</span>
+                    Stage {{ latest_assessment.stage }} · {{ latest_assessment.score }}% ·
+                    {% if latest_assessment.passed %}
+                        <span class="text-emerald-300">Passed</span>
+                    {% else %}
+                        <span class="text-brand-error">Not Passed</span>
+                    {% endif %}
+                </p>
+            {% endif %}
         </div>
 
-        <a href="/assessment/" class="inline-flex w-full sm:w-auto items-center justify-center bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-4 px-6 rounded-brand-input transition-all duration-200 uppercase">
-            Start Assessment
-        </a>
+        {% if is_completed %}
+            <p class="text-emerald-300 text-sm mb-4">You have successfully completed all assessment stages.</p>
+        {% else %}
+            <a href="/assessment/" class="inline-flex w-full sm:w-auto items-center justify-center bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-4 px-6 rounded-brand-input transition-all duration-200 uppercase">
+                Start {{ next_stage_label }}
+            </a>
+        {% endif %}
 
         <div class="mt-4">
             <a href="{% url 'logout' %}" class="inline-flex items-center justify-center text-sm font-medium text-brand-text-muted border border-brand-border rounded-brand-input px-4 py-2 hover:text-white hover:border-brand-text-muted transition-colors">

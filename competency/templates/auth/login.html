@@ -17,6 +17,25 @@
     <div class="bg-brand-card rounded-brand p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
         <form method="POST" action="{% url 'login_post' %}" class="space-y-6">
             {% csrf_token %}
+
+            <p class="text-brand-text-muted text-sm leading-relaxed">
+                First time: enter name, role, and email to create your account. After that, you will use your email to receive an OTP for each login.
+            </p>
+
+            <!-- Email -->
+            <div class="space-y-4">
+                <label for="id_email" class="block text-sm font-medium text-brand-text-muted">Email</label>
+                <input type="email"
+                       name="email"
+                       id="id_email"
+                       required
+                       class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white placeholder-brand-text-muted/50 focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none"
+                       placeholder="you@company.com"
+                       value="{{ request.POST.email|default:'' }}">
+                {% if errors.email %}
+                    <p class="text-brand-error text-xs mt-4">{{ errors.email }}</p>
+                {% endif %}
+            </div>
             
             <!-- Full Name -->
             <div class="space-y-4">
@@ -24,9 +43,9 @@
                 <input type="text" 
                        name="name" 
                        id="id_name" 
-                       required
                        class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white placeholder-brand-text-muted/50 focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none"
-                       placeholder="Enter your full name">
+                       placeholder="Enter your full name (first-time only)"
+                       value="{{ request.POST.name|default:'' }}">
                 {% if errors.name %}
                     <p class="text-brand-error text-xs mt-4">{{ errors.name }}</p>
                 {% endif %}
@@ -37,37 +56,23 @@
                 <label for="id_role" class="block text-sm font-medium text-brand-text-muted">Role</label>
                 <select name="role" 
                         id="id_role" 
-                        required
                         class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none appearance-none cursor-pointer">
-                    <option value="" disabled selected>Select your role</option>
-                    <option value="executive">Executive</option>
-                    <option value="manager">Manager</option>
-                    <option value="senior-manager">Senior Manager</option>
-                    <option value="director">Director</option>
-                    <option value="other">Other</option>
+                    <option value="" {% if not request.POST.role %}selected{% endif %}>Select your role (first-time only)</option>
+                    <option value="executive" {% if request.POST.role == 'executive' %}selected{% endif %}>Executive</option>
+                    <option value="manager" {% if request.POST.role == 'manager' %}selected{% endif %}>Manager</option>
+                    <option value="senior-manager" {% if request.POST.role == 'senior-manager' %}selected{% endif %}>Senior Manager</option>
+                    <option value="director" {% if request.POST.role == 'director' %}selected{% endif %}>Director</option>
+                    <option value="other" {% if request.POST.role == 'other' %}selected{% endif %}>Other</option>
                 </select>
                 {% if errors.role %}
                     <p class="text-brand-error text-xs mt-4">{{ errors.role }}</p>
                 {% endif %}
             </div>
 
-            <!-- Date -->
-            <div class="space-y-4">
-                <label for="id_date" class="block text-sm font-medium text-brand-text-muted">Date</label>
-                <input type="date" 
-                       name="date" 
-                       id="id_date" 
-                       required
-                       class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none">
-                {% if errors.date %}
-                    <p class="text-brand-error text-xs mt-4">{{ errors.date }}</p>
-                {% endif %}
-            </div>
-
             <!-- Primary Button -->
             <button type="submit" 
                     class="w-full bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 hover:shadow-lg text-white font-bold py-4 px-6 rounded-brand-input transition-all duration-200 uppercase flex items-center justify-center gap-2 mt-6">
-                BEGIN CERTIFICATION →
+                CONTINUE →
             </button>
         </form>
     </div>

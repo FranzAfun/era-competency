@@ -5,26 +5,60 @@
 {% block content %}
 <div class="w-full max-w-2xl mx-auto">
     <div class="bg-brand-card rounded-brand p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
-        <h2 class="text-white text-2xl font-semibold mb-6">{{ question.text }}</h2>
+        <p class="text-brand-text-muted text-sm mb-3">{{ stage_label }} · Question {{ question_number }} of {{ total_questions }}</p>
 
-        <form method="POST" class="space-y-4">
-            {% csrf_token %}
+        {% if assessment_unavailable %}
+            <p class="text-brand-error text-sm">{{ error }}</p>
+            <a href="{% url 'dashboard' %}" class="inline-flex mt-6 items-center justify-center bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-3 px-6 rounded-brand-input transition-all duration-200 uppercase">
+                Back to Dashboard
+            </a>
+        {% else %}
+            <h2 class="text-white text-2xl font-semibold mb-6">{{ question.text }}</h2>
 
-            {% if error %}
-                <p class="text-brand-error text-sm">{{ error }}</p>
-            {% endif %}
+            <form method="POST" class="space-y-4">
+                {% csrf_token %}
 
-            {% for option in question.options.all %}
-                <label class="flex items-start gap-3 text-brand-text-muted cursor-pointer">
-                    <input type="radio" name="option" value="{{ option.id }}" class="mt-1 accent-brand-primary" {% if forloop.first %}required{% endif %}>
-                    <span>{{ option.text }}</span>
-                </label>
-            {% endfor %}
+                {% if error %}
+                    <p class="text-brand-error text-sm">{{ error }}</p>
+                {% endif %}
 
-            <button type="submit" class="w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-3 px-6 rounded-brand-input transition-all duration-200 uppercase">
-                Next
-            </button>
-        </form>
+                {% if feedback %}
+                    {% if feedback.is_correct %}
+                        <div class="border border-emerald-500/40 bg-emerald-500/10 rounded-brand-input px-4 py-3 text-emerald-300 text-sm">
+                            {{ feedback.message }}
+                        </div>
+                    {% else %}
+                        <div class="border border-brand-error/50 bg-brand-error/10 rounded-brand-input px-4 py-3 text-brand-error text-sm">
+                            {{ feedback.message }}
+                        </div>
+                    {% endif %}
+                {% endif %}
+
+                {% for option in question.options.all %}
+                    <label class="flex items-start gap-3 text-brand-text-muted cursor-pointer {% if selected_option_id == option.id %}text-white{% endif %}">
+                        <input
+                            type="radio"
+                            name="option"
+                            value="{{ option.id }}"
+                            class="mt-1 accent-brand-primary"
+                            {% if selected_option_id == option.id %}checked{% endif %}
+                            {% if not feedback %}{% if forloop.first %}required{% endif %}{% else %}disabled{% endif %}
+                        >
+                        <span>{{ option.text }}</span>
+                    </label>
+                {% endfor %}
+
+                {% if feedback %}
+                    <button type="submit" name="action" value="next" class="w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-3 px-6 rounded-brand-input transition-all duration-200 uppercase">
+                        {% if is_last_question %}Finish Stage{% else %}Next Question{% endif %}
+                    </button>
+                {% else %}
+                    <button type="submit" name="action" value="submit" class="w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-3 px-6 rounded-brand-input transition-all duration-200 uppercase">
+                        Submit Answer
+                    </button>
+                {% endif %}
+            </form>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
