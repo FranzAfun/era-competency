@@ -2,8 +2,10 @@ import random
 from datetime import timedelta
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password, make_password
 from django.core.mail import send_mail
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
@@ -32,7 +34,7 @@ def _send_login_otp(executive):
     )
 
     send_mail(
-        subject='Your ERA AXIS login OTP',
+        subject='ERA AXIS Competency - Your Login OTP',
         message=(
             f"Your ERA AXIS one-time password is {code}. "
             f"It expires in {OTP_EXPIRY_MINUTES} minutes."
@@ -75,6 +77,7 @@ def _start_assessment_session(request, stage_number):
         .order_by('order', 'id')
         .values_list('id', flat=True)[:QUESTIONS_PER_STAGE]
     )
+    random.shuffle(question_ids)
 
     request.session['assessment_stage'] = stage_number
     request.session['assessment_question_ids'] = question_ids
@@ -97,6 +100,41 @@ def _clear_assessment_session(request):
         'assessment_completed',
     ]:
         request.session.pop(key, None)
+
+
+def _notify_admins_about_submission(assessment, total_questions):
+    user_model = get_user_model()
+    recipient_list = list(
+        user_model.objects.filter(is_superuser=True)
+        .exclude(email='')
+        .values_list('email', flat=True)
+    )
+
+    if not recipient_list:
+        return
+
+    executive = assessment.executive
+    stage_label = assessment.stage_ref.name if assessment.stage_ref else f"Stage {assessment.stage}"
+    subject = f"ERA AXIS Competency - Assessment Submitted ({stage_label})"
+    message = (
+        f"An assessment submission has been recorded.\n\n"
+        f"Executive: {executive.name}\n"
+        f"Email: {executive.email}\n"
+        f"Role: {executive.role}\n"
+        f"Stage: {stage_label}\n"
+        f"Attempt: {assessment.attempt_number}\n"
+        f"Score: {assessment.score}%\n"
+        f"Correct Answers: {assessment.correct_answers}/{total_questions}\n"
+        f"Status: {'Passed' if assessment.passed else 'Not Passed'}\n"
+    )
+
+    send_mail(
+        subject=subject,
+        message=message,
+        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
+        recipient_list=recipient_list,
+        fail_silently=True,
+    )
 
 def login_view(request):
     errors = {}
@@ -211,8 +249,15 @@ def dashboard(request):
     if not executive:
         return redirect('/')
 
+    assessments = Assessment.objects.filter(executive=executive).select_related('stage_ref').order_by('-created_at')
     next_stage = _get_next_stage_for_executive(executive)
-    latest_assessment = Assessment.objects.filter(executive=executive).order_by('-created_at').first()
+    latest_assessment = assessments.first()
+
+    total_attempts = assessments.count()
+    pass_count = assessments.filter(passed=True).count()
+    completed_stage_count = assessments.filter(passed=True).values_list('stage', flat=True).distinct().count()
+    overall_average_score = assessments.aggregate(avg=Avg('score'))['avg'] or 0
+    overall_pass_rate = (pass_count / total_attempts) * 100 if total_attempts else 0
 
     user = request.session.get('user', {})
     user['name'] = executive.name
@@ -226,6 +271,11 @@ def dashboard(request):
         'next_stage_label': _get_stage_label(next_stage) if next_stage else None,
         'is_completed': next_stage is None,
         'latest_assessment': latest_assessment,
+        'overall_average_score': round(overall_average_score, 2),
+        'overall_pass_rate': round(overall_pass_rate, 2),
+        'total_attempts': total_attempts,
+        'completed_stage_count': completed_stage_count,
+        'performance_history': assessments[:10],
     })
 
 def logout_view(request):
@@ -425,6 +475,8 @@ def result(request):
         )
         for item in responses_to_create
     ])
+
+    _notify_admins_about_submission(assessment, total)
 
     request.session['assessment_record_id'] = assessment.id
     _clear_assessment_session(request)

@@ -33,6 +33,20 @@ class Question(models.Model):
 	order = models.IntegerField()
 	created_at = models.DateTimeField(auto_now_add=True)
 
+	class Meta:
+		ordering = ['stage', 'order', 'id']
+		constraints = [
+			models.CheckConstraint(
+				condition=models.Q(order__gte=1) & models.Q(order__lte=25),
+				name='question_order_between_1_and_25',
+			),
+			models.UniqueConstraint(
+				fields=['stage_ref', 'order'],
+				condition=models.Q(stage_ref__isnull=False),
+				name='unique_stage_ref_question_order',
+			),
+		]
+
 
 class Option(models.Model):
 	question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='options')

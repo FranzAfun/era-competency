@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Questions - ERA AXIS{% endblock %}
+
+{% block content %}
+<div class="w-full max-w-6xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <h1 class="text-white text-3xl font-semibold">Manage Questions</h1>
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{% url 'admin_portal_questions_template' %}" class="inline-flex items-center justify-center text-sm font-medium text-white bg-brand-primary px-4 py-2 rounded-brand-input hover:bg-brand-primary-hover transition-colors">Download Excel Template</a>
+            <a href="{% url 'admin_portal_dashboard' %}" class="inline-flex items-center justify-center text-sm font-medium text-brand-text-muted border border-brand-border px-4 py-2 rounded-brand-input hover:text-white hover:border-brand-text-muted transition-colors">Back to Dashboard</a>
+        </div>
+    </div>
+
+    <div class="bg-brand-card rounded-brand p-6 border border-brand-border">
+        <h2 class="text-white text-xl font-semibold mb-3">Bulk Upload from Excel</h2>
+        <p class="text-brand-text-muted text-sm mb-4">Use the template file, select a stage, and upload. Import stops automatically when the stage reaches 25 questions.</p>
+
+        <form method="POST" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            {% csrf_token %}
+            <input type="hidden" name="upload_mode" value="1">
+
+            <div>
+                <label class="block text-sm font-medium text-brand-text-muted mb-2">Stage</label>
+                <select name="upload_stage_id" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none">
+                    <option value="">Select active stage</option>
+                    {% for stage in stages %}
+                        <option value="{{ stage.id }}">Stage {{ stage.order }} - {{ stage.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-brand-text-muted mb-2">Excel File (.xlsx)</label>
+                <input type="file" name="questions_file" accept=".xlsx" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-brand-text-muted focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none">
+            </div>
+
+            <button type="submit" class="w-full md:w-auto bg-brand-primary hover:bg-brand-primary-hover text-white font-bold py-3 px-6 rounded-brand-input transition-all uppercase">Upload Questions</button>
+        </form>
+    </div>
+
+    <div class="bg-brand-card rounded-brand p-6 border border-brand-border">
+        {% if messages %}
+            <div class="space-y-2 mb-4">
+                {% for message in messages %}
+                    <p class="text-sm {% if message.tags == 'error' %}text-brand-error{% else %}text-emerald-300{% endif %}">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+
+            <p class="text-brand-text-muted text-sm">Question order is automatic. Each new question is appended to the selected stage queue until 25 questions are reached.</p>
+
+            <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-brand-text-muted mb-2">Stage</label>
+                    <select name="stage_id" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none">
+                        <option value="">Select active stage</option>
+                        {% for stage in stages %}
+                            <option value="{{ stage.id }}">Stage {{ stage.order }} - {{ stage.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-brand-text-muted mb-2">Question Text</label>
+                <textarea name="text" rows="3" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none" placeholder="Enter the full question text"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label class="block text-sm font-medium text-brand-text-muted mb-2">Option 1</label><input type="text" name="option_1" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none"></div>
+                <div><label class="block text-sm font-medium text-brand-text-muted mb-2">Option 2</label><input type="text" name="option_2" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none"></div>
+                <div><label class="block text-sm font-medium text-brand-text-muted mb-2">Option 3</label><input type="text" name="option_3" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none"></div>
+                <div><label class="block text-sm font-medium text-brand-text-muted mb-2">Option 4</label><input type="text" name="option_4" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none"></div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-brand-text-muted mb-2">Correct Option</label>
+                <select name="correct_option" required class="w-full md:w-64 bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none">
+                    <option value="">Select correct option</option>
+                    <option value="1">Option 1</option>
+                    <option value="2">Option 2</option>
+                    <option value="3">Option 3</option>
+                    <option value="4">Option 4</option>
+                </select>
+            </div>
+
+            <button type="submit" class="w-full md:w-auto bg-brand-primary hover:bg-brand-primary-hover text-white font-bold py-3 px-6 rounded-brand-input transition-all uppercase">Save Question</button>
+        </form>
+    </div>
+
+    <div class="bg-brand-card rounded-brand p-6 border border-brand-border">
+        <h2 class="text-white text-xl font-semibold mb-4">Recent Questions</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead>
+                    <tr class="text-brand-text-muted border-b border-brand-border">
+                        <th class="text-left py-2 pr-4">Stage</th>
+                        <th class="text-left py-2 pr-4">Order</th>
+                        <th class="text-left py-2">Question</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for question in question_rows %}
+                        <tr class="border-b border-brand-border/50 text-brand-text-muted">
+                            <td class="py-3 pr-4">{{ question.stage_ref.name|default:question.stage }}</td>
+                            <td class="py-3 pr-4 text-white">{{ question.order }}</td>
+                            <td class="py-3">{{ question.text|truncatechars:120 }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3" class="py-4 text-brand-text-muted">No questions yet.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

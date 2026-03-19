@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - ERA AXIS{% endblock %}
+
+{% block content %}
+<div class="w-full max-w-6xl mx-auto space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 class="text-white text-3xl font-semibold">Competency Admin Dashboard</h1>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'admin_portal_stages' %}" class="inline-flex items-center justify-center text-sm font-medium text-white bg-brand-primary px-4 py-2 rounded-brand-input hover:bg-brand-primary-hover transition-colors">Manage Stages</a>
+            <a href="{% url 'admin_portal_questions' %}" class="inline-flex items-center justify-center text-sm font-medium text-brand-text-muted border border-brand-border px-4 py-2 rounded-brand-input hover:text-white hover:border-brand-text-muted transition-colors">Manage Questions</a>
+            <a href="{% url 'admin_portal_logout' %}" class="inline-flex items-center justify-center text-sm font-medium text-brand-error border border-brand-error/50 px-4 py-2 rounded-brand-input hover:bg-brand-error/10 transition-colors">Logout</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="bg-brand-card rounded-brand p-5 border border-brand-border"><p class="text-brand-text-muted text-sm">Executives</p><p class="text-white text-2xl font-semibold mt-2">{{ total_executives }}</p></div>
+        <div class="bg-brand-card rounded-brand p-5 border border-brand-border"><p class="text-brand-text-muted text-sm">Questions</p><p class="text-white text-2xl font-semibold mt-2">{{ total_questions }}</p></div>
+        <div class="bg-brand-card rounded-brand p-5 border border-brand-border"><p class="text-brand-text-muted text-sm">Assessments</p><p class="text-white text-2xl font-semibold mt-2">{{ total_assessments }}</p></div>
+        <div class="bg-brand-card rounded-brand p-5 border border-brand-border"><p class="text-brand-text-muted text-sm">Overall Pass Rate</p><p class="text-white text-2xl font-semibold mt-2">{{ overall_pass_rate }}%</p></div>
+    </div>
+
+    <div class="bg-brand-card rounded-brand p-6 border border-brand-border">
+        <h2 class="text-white text-xl font-semibold mb-4">Stage Performance</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead>
+                    <tr class="text-brand-text-muted border-b border-brand-border">
+                        <th class="text-left py-2 pr-4">Stage</th>
+                        <th class="text-left py-2 pr-4">Questions</th>
+                        <th class="text-left py-2 pr-4">Attempts</th>
+                        <th class="text-left py-2 pr-4">Pass Rate</th>
+                        <th class="text-left py-2">Average Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in stage_stats %}
+                        <tr class="border-b border-brand-border/50 text-brand-text-muted">
+                            <td class="py-3 pr-4 text-white">{{ row.stage.name }}</td>
+                            <td class="py-3 pr-4">{{ row.question_count }}/25</td>
+                            <td class="py-3 pr-4">{{ row.total_attempts }}</td>
+                            <td class="py-3 pr-4">{{ row.pass_rate }}%</td>
+                            <td class="py-3">{{ row.average_score }}%</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="py-4 text-brand-text-muted">No stages configured yet.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-brand-card rounded-brand p-6 border border-brand-border">
+        <h2 class="text-white text-xl font-semibold mb-4">Flagged Difficult Questions</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm mb-2">
+                <thead>
+                    <tr class="text-brand-text-muted border-b border-brand-border">
+                        <th class="text-left py-2 pr-4">Stage</th>
+                        <th class="text-left py-2 pr-4">Order</th>
+                        <th class="text-left py-2 pr-4">Wrong Rate</th>
+                        <th class="text-left py-2">Question</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for question in difficult_questions %}
+                        <tr class="border-b border-brand-border/50 text-brand-text-muted">
+                            <td class="py-3 pr-4">{{ question.stage_ref.name|default:question.stage }}</td>
+                            <td class="py-3 pr-4">{{ question.order }}</td>
+                            <td class="py-3 pr-4 text-brand-error">{{ question.wrong_rate|floatformat:2 }}%</td>
+                            <td class="py-3">{{ question.text|truncatechars:120 }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="4" class="py-4 text-brand-text-muted">No flagged difficult questions yet (minimum 3 responses needed).</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-brand-card rounded-brand p-6 border border-brand-border">
+        <h2 class="text-white text-xl font-semibold mb-4">Recent Assessments</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead>
+                    <tr class="text-brand-text-muted border-b border-brand-border">
+                        <th class="text-left py-2 pr-4">Executive</th>
+                        <th class="text-left py-2 pr-4">Stage</th>
+                        <th class="text-left py-2 pr-4">Attempt</th>
+                        <th class="text-left py-2 pr-4">Score</th>
+                        <th class="text-left py-2">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in recent_assessments %}
+                        <tr class="border-b border-brand-border/50 text-brand-text-muted">
+                            <td class="py-3 pr-4 text-white">{{ item.executive.name }}</td>
+                            <td class="py-3 pr-4">{{ item.stage_ref.name|default:item.stage }}</td>
+                            <td class="py-3 pr-4">{{ item.attempt_number }}</td>
+                            <td class="py-3 pr-4">{{ item.score }}%</td>
+                            <td class="py-3">
+                                {% if item.passed %}
+                                    <span class="text-emerald-300">Passed</span>
+                                {% else %}
+                                    <span class="text-brand-error">Failed</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="py-4 text-brand-text-muted">No assessments yet.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

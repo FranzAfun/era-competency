@@ -3,7 +3,7 @@
 {% block title %}Dashboard - ERA AXIS{% endblock %}
 
 {% block content %}
-<div class="w-full max-w-2xl mx-auto">
+<div class="w-full max-w-5xl mx-auto space-y-6">
     <div class="bg-brand-card rounded-brand p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
         <h1 class="text-white text-3xl font-semibold mb-6">Welcome, {{ user.name }}</h1>
 
@@ -43,6 +43,64 @@
             <a href="{% url 'logout' %}" class="inline-flex items-center justify-center text-sm font-medium text-brand-text-muted border border-brand-border rounded-brand-input px-4 py-2 hover:text-white hover:border-brand-text-muted transition-colors">
                 Logout
             </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="bg-brand-card rounded-brand p-5 border border-brand-border">
+            <p class="text-brand-text-muted text-sm">Overall Average</p>
+            <p class="text-white text-2xl font-semibold mt-2">{{ overall_average_score }}%</p>
+        </div>
+        <div class="bg-brand-card rounded-brand p-5 border border-brand-border">
+            <p class="text-brand-text-muted text-sm">Pass Rate</p>
+            <p class="text-white text-2xl font-semibold mt-2">{{ overall_pass_rate }}%</p>
+        </div>
+        <div class="bg-brand-card rounded-brand p-5 border border-brand-border">
+            <p class="text-brand-text-muted text-sm">Completed Stages</p>
+            <p class="text-white text-2xl font-semibold mt-2">{{ completed_stage_count }}/4</p>
+        </div>
+        <div class="bg-brand-card rounded-brand p-5 border border-brand-border">
+            <p class="text-brand-text-muted text-sm">Total Attempts</p>
+            <p class="text-white text-2xl font-semibold mt-2">{{ total_attempts }}</p>
+        </div>
+    </div>
+
+    <div class="bg-brand-card rounded-brand p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
+        <h2 class="text-white text-xl font-semibold mb-4">Previous Performance</h2>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead>
+                    <tr class="text-brand-text-muted border-b border-brand-border">
+                        <th class="text-left py-2 pr-4">Date</th>
+                        <th class="text-left py-2 pr-4">Stage</th>
+                        <th class="text-left py-2 pr-4">Attempt</th>
+                        <th class="text-left py-2 pr-4">Score</th>
+                        <th class="text-left py-2">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in performance_history %}
+                        <tr class="border-b border-brand-border/50 text-brand-text-muted">
+                            <td class="py-3 pr-4">{{ item.created_at|date:"M d, Y H:i" }}</td>
+                            <td class="py-3 pr-4">{{ item.stage_ref.name|default:item.stage }}</td>
+                            <td class="py-3 pr-4">#{{ item.attempt_number }}</td>
+                            <td class="py-3 pr-4 text-white">{{ item.score }}%</td>
+                            <td class="py-3">
+                                {% if item.passed %}
+                                    <span class="text-emerald-300">Passed</span>
+                                {% else %}
+                                    <span class="text-brand-error">Not Passed</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="py-4 text-brand-text-muted">No previous attempts yet.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

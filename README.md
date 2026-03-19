@@ -100,6 +100,17 @@ The system is intended to be deployed on a **single virtual machine**, hosting:
 
 This keeps infrastructure minimal and manageable.
 
+For full production deployment on a GCP VM (Gunicorn + Nginx + systemd + HTTPS), follow:
+
+* `DEPLOYMENT_GCP_VM.md`
+
+Before shipping to production, run:
+
+```bash
+python manage.py check --deploy
+python manage.py collectstatic --noinput
+```
+
 ## License
 
 Internal ERA AXIS project.

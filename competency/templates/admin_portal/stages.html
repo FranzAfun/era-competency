@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Stages - ERA AXIS{% endblock %}
+
+{% block content %}
+<div class="w-full max-w-5xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <h1 class="text-white text-3xl font-semibold">Manage Stages</h1>
+        <a href="{% url 'admin_portal_dashboard' %}" class="inline-flex items-center justify-center text-sm font-medium text-brand-text-muted border border-brand-border px-4 py-2 rounded-brand-input hover:text-white hover:border-brand-text-muted transition-colors">Back to Dashboard</a>
+    </div>
+
+    <div class="bg-brand-card rounded-brand p-6 border border-brand-border">
+        {% if messages %}
+            <div class="space-y-2 mb-4">
+                {% for message in messages %}
+                    <p class="text-sm {% if message.tags == 'error' %}text-brand-error{% else %}text-emerald-300{% endif %}">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            {% csrf_token %}
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-brand-text-muted mb-2">Stage Name</label>
+                <input type="text" name="name" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none" placeholder="Leadership Fundamentals">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-brand-text-muted mb-2">Order (1-4)</label>
+                <input type="number" name="order" min="1" max="4" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none">
+            </div>
+            <div>
+                <label class="inline-flex items-center gap-2 text-brand-text-muted text-sm mb-3">
+                    <input type="checkbox" name="is_active" checked class="accent-brand-primary"> Active
+                </label>
+                <button type="submit" class="w-full bg-brand-primary hover:bg-brand-primary-hover text-white font-bold py-3 px-4 rounded-brand-input transition-all uppercase">Save Stage</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="bg-brand-card rounded-brand p-6 border border-brand-border">
+        <h2 class="text-white text-xl font-semibold mb-4">Configured Stages</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead>
+                    <tr class="text-brand-text-muted border-b border-brand-border">
+                        <th class="text-left py-2 pr-4">Order</th>
+                        <th class="text-left py-2 pr-4">Name</th>
+                        <th class="text-left py-2 pr-4">Status</th>
+                        <th class="text-left py-2">Questions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stage in stages %}
+                        <tr class="border-b border-brand-border/50 text-brand-text-muted">
+                            <td class="py-3 pr-4 text-white">{{ stage.order }}</td>
+                            <td class="py-3 pr-4">{{ stage.name }}</td>
+                            <td class="py-3 pr-4">
+                                {% if stage.is_active %}
+                                    <span class="text-emerald-300">Active</span>
+                                {% else %}
+                                    <span class="text-brand-error">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3">{{ stage.question_count }}/25</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="4" class="py-4 text-brand-text-muted">No stages configured yet.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

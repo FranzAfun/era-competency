@@ -17,16 +17,54 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def _load_dotenv(path):
+    if not path.exists():
+        return
+
+    for raw_line in path.read_text(encoding='utf-8').splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+
+        key, value = line.split('=', 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+_load_dotenv(BASE_DIR / '.env')
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
+
+def _get_bool_env(name, default=False):
+    return os.getenv(name, str(default)).strip().lower() in ('1', 'true', 'yes', 'on')
+
+
+def _get_list_env(name, default=''):
+    value = os.getenv(name, default)
+    return [item.strip() for item in value.split(',') if item.strip()]
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-sfg)e@j7(h_j@%%1p2ky_d$!o)-*%e7&x3$h5$v^#jpq&x$04d'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-sfg)e@j7(h_j@%%1p2ky_d$!o)-*%e7&x3$h5$v^#jpq&x$04d')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = _get_bool_env('DEBUG', True)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = _get_list_env('ALLOWED_HOSTS', '127.0.0.1,localhost')
+CSRF_TRUSTED_ORIGINS = _get_list_env('CSRF_TRUSTED_ORIGINS', '')
+
+for local_host in ('127.0.0.1', 'localhost'):
+    if local_host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(local_host)
+
+for local_origin in ('http://127.0.0.1:8000', 'http://localhost:8000'):
+    if local_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(local_origin)
 
 
 # Application definition
@@ -43,6 +81,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -116,7 +155,30 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+STATICFILES_DIRS = []
+PROJECT_STATIC_DIR = BASE_DIR / 'static'
+if PROJECT_STATIC_DIR.exists():
+    STATICFILES_DIRS.append(PROJECT_STATIC_DIR)
+
+
+# Reverse proxy / SSL termination (Nginx on GCP VM)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT = _get_bool_env('SECURE_SSL_REDIRECT', True)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '31536000'))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = _get_bool_env('SECURE_HSTS_INCLUDE_SUBDOMAINS', True)
+    SECURE_HSTS_PRELOAD = _get_bool_env('SECURE_HSTS_PRELOAD', True)
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+else:
+    SECURE_SSL_REDIRECT = False
 
 
 # Email / OTP delivery
@@ -125,6 +187,6 @@ EMAIL_HOST = os.getenv('EMAIL_HOST', '')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'true').lower() in ('1', 'true', 'yes')
-EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'false').lower() in ('1', 'true', 'yes')
+EMAIL_USE_TLS = _get_bool_env('EMAIL_USE_TLS', True)
+EMAIL_USE_SSL = _get_bool_env('EMAIL_USE_SSL', False)
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'no-reply@era-axis.local')
