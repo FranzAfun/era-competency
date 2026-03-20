@@ -13,9 +13,13 @@
             <p><span class="text-white font-medium">Date:</span> {{ user.date }}</p>
 
             {% if is_completed %}
-                <p><span class="text-white font-medium">Status:</span> All 4 stages completed</p>
+                <p><span class="text-white font-medium">Status:</span> All configured stages completed</p>
             {% else %}
-                <p><span class="text-white font-medium">Current Stage:</span> {{ next_stage_label }}</p>
+                {% if has_active_stages and next_stage_label %}
+                    <p><span class="text-white font-medium">Current Stage:</span> {{ next_stage_label }}</p>
+                {% else %}
+                    <p><span class="text-white font-medium">Current Stage:</span> Waiting for admin activation</p>
+                {% endif %}
             {% endif %}
 
             {% if latest_assessment %}
@@ -32,11 +36,19 @@
         </div>
 
         {% if is_completed %}
-            <p class="text-emerald-300 text-sm mb-4">You have successfully completed all assessment stages.</p>
+            <p class="text-emerald-300 text-sm mb-4">You have completed all configured stages. Start will remain inactive until admin activates a new stage cycle.</p>
+            <button type="button" disabled class="inline-flex w-full sm:w-auto items-center justify-center bg-slate-700/50 text-slate-300 font-bold py-4 px-6 rounded-brand-input cursor-not-allowed uppercase">
+                Start Stage (Inactive)
+            </button>
+        {% elif not has_active_stages %}
+            <p class="text-brand-text-muted text-sm mb-4">No active stages are available yet. Please wait for admin to activate stages.</p>
+            <button type="button" disabled class="inline-flex w-full sm:w-auto items-center justify-center bg-slate-700/50 text-slate-300 font-bold py-4 px-6 rounded-brand-input cursor-not-allowed uppercase">
+                Start Stage (Inactive)
+            </button>
         {% else %}
-            <a href="/assessment/" class="inline-flex w-full sm:w-auto items-center justify-center bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-4 px-6 rounded-brand-input transition-all duration-200 uppercase">
+            <button type="button" id="open-start-modal" class="inline-flex w-full sm:w-auto items-center justify-center bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-4 px-6 rounded-brand-input transition-all duration-200 uppercase">
                 Start {{ next_stage_label }}
-            </a>
+            </button>
         {% endif %}
 
         <div class="mt-4">
@@ -57,7 +69,7 @@
         </div>
         <div class="bg-brand-card rounded-brand p-5 border border-brand-border">
             <p class="text-brand-text-muted text-sm">Completed Stages</p>
-            <p class="text-white text-2xl font-semibold mt-2">{{ completed_stage_count }}/4</p>
+            <p class="text-white text-2xl font-semibold mt-2">{{ completed_stage_count }}/{{ stage_count }}</p>
         </div>
         <div class="bg-brand-card rounded-brand p-5 border border-brand-border">
             <p class="text-brand-text-muted text-sm">Total Attempts</p>
@@ -104,4 +116,44 @@
         </div>
     </div>
 </div>
+
+<div id="start-stage-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 px-4">
+    <div class="w-full max-w-md rounded-brand border border-brand-border bg-brand-card p-6 shadow-2xl">
+        <h3 class="text-xl font-semibold text-white">Start Assessment</h3>
+        <p class="mt-3 text-sm text-brand-text-muted">You are about to begin {{ next_stage_label }}. Continue?</p>
+        <div class="mt-6 flex flex-wrap justify-end gap-3">
+            <button type="button" id="start-stage-cancel" class="border border-brand-border hover:border-brand-text-muted text-brand-text-muted hover:text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Cancel</button>
+            <a href="/assessment/" class="bg-brand-primary hover:bg-brand-primary-hover text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Start</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const openButton = document.getElementById('open-start-modal');
+        const modal = document.getElementById('start-stage-modal');
+        const cancelButton = document.getElementById('start-stage-cancel');
+
+        if (!openButton || !modal || !cancelButton) {
+            return;
+        }
+
+        openButton.addEventListener('click', function () {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        });
+
+        cancelButton.addEventListener('click', function () {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        });
+
+        modal.addEventListener('click', function (event) {
+            if (event.target === modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        });
+    })();
+</script>
 {% endblock %}

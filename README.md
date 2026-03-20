@@ -19,6 +19,7 @@ The platform is feature-complete for the current scope and is ready for producti
 - User email notification when a stage is passed
 - Admin alert when an executive reaches 3 failed attempts on the same stage
 - Admin notifications when an executive completes Stage 4 (pass or fail)
+- Admin New Cycle reset control to clear assessment history for fresh test rounds
 
 ## Technology Stack
 

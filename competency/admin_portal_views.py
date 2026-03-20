@@ -113,6 +113,23 @@ def admin_stages_view(request):
 
 
 @user_passes_test(_is_portal_admin, login_url='admin_portal_login')
+def admin_reset_cycle_view(request):
+    if request.method != 'POST':
+        return redirect('admin_portal_stages')
+
+    total_assessments = Assessment.objects.count()
+    executive_count = Assessment.objects.values('executive_id').distinct().count()
+
+    Assessment.objects.all().delete()
+
+    messages.success(
+        request,
+        f'New cycle started. Cleared {total_assessments} assessment record(s) across {executive_count} executive(s).',
+    )
+    return redirect('admin_portal_stages')
+
+
+@user_passes_test(_is_portal_admin, login_url='admin_portal_login')
 def admin_questions_view(request):
     active_stages = Stage.objects.filter(is_active=True).order_by('order')
 

@@ -10,6 +10,12 @@
     </div>
 
     <div class="bg-brand-card rounded-brand p-6 border border-brand-border">
+        <div class="mb-6 rounded-brand border border-red-400/40 bg-red-500/10 p-4">
+            <h2 class="text-white text-lg font-semibold">Start New Cycle</h2>
+            <p class="text-red-200 text-sm mt-2">This will reset all executive assessment history and re-open the assessment flow from the first active stage. Use this only when starting a fresh test cycle.</p>
+            <button type="button" id="open-reset-cycle-modal" class="mt-4 bg-red-500 hover:bg-red-400 text-white font-bold py-2 px-4 rounded-brand-input transition-colors uppercase text-sm">Reset Executive Progress</button>
+        </div>
+
         {% if messages %}
             <div class="space-y-2 mb-4">
                 {% for message in messages %}
@@ -18,7 +24,7 @@
             </div>
         {% endif %}
 
-        <form method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <form method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end" id="stage-form">
             {% csrf_token %}
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-brand-text-muted mb-2">Stage Name</label>
@@ -26,13 +32,13 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-brand-text-muted mb-2">Order (1-4)</label>
-                <input type="number" name="order" min="1" max="4" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none">
+                <input type="number" id="stage-order-input" name="order" min="1" max="4" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none">
             </div>
             <div>
                 <label class="inline-flex items-center gap-2 text-brand-text-muted text-sm mb-3">
                     <input type="checkbox" name="is_active" checked class="accent-brand-primary"> Active
                 </label>
-                <button type="submit" class="w-full bg-brand-primary hover:bg-brand-primary-hover text-white font-bold py-3 px-4 rounded-brand-input transition-all uppercase">Save Stage</button>
+                <button type="submit" id="save-stage-button" class="w-full bg-brand-primary hover:bg-brand-primary-hover text-white font-bold py-3 px-4 rounded-brand-input transition-all uppercase">Save Stage</button>
             </div>
         </form>
     </div>
@@ -73,4 +79,112 @@
         </div>
     </div>
 </div>
+
+<div id="overwrite-stage-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 px-4">
+    <div class="w-full max-w-md rounded-brand border border-brand-border bg-brand-card p-6 shadow-2xl">
+        <h3 class="text-xl font-semibold text-white">Confirm Stage Override</h3>
+        <p id="overwrite-stage-modal-message" class="mt-3 text-sm text-brand-text-muted">This order already exists. Continue and overwrite it?</p>
+        <div class="mt-6 flex flex-wrap justify-end gap-3">
+            <button type="button" id="overwrite-stage-cancel" class="border border-brand-border hover:border-brand-text-muted text-brand-text-muted hover:text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Cancel</button>
+            <button type="button" id="overwrite-stage-confirm" class="bg-brand-primary hover:bg-brand-primary-hover text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Continue</button>
+        </div>
+    </div>
+</div>
+
+<div id="reset-cycle-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 px-4">
+    <div class="w-full max-w-md rounded-brand border border-red-400/40 bg-brand-card p-6 shadow-2xl">
+        <h3 class="text-xl font-semibold text-white">Confirm New Cycle Reset</h3>
+        <p class="mt-3 text-sm text-red-200">This action will permanently remove all existing assessment attempts for all executives. Continue?</p>
+
+        <form method="POST" action="{% url 'admin_portal_reset_cycle' %}" class="mt-6 flex flex-wrap justify-end gap-3" id="reset-cycle-form">
+            {% csrf_token %}
+            <button type="button" id="reset-cycle-cancel" class="border border-brand-border hover:border-brand-text-muted text-brand-text-muted hover:text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Cancel</button>
+            <button type="submit" class="bg-red-500 hover:bg-red-400 text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Yes, Reset Cycle</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const stageForm = document.getElementById('stage-form');
+        const orderInput = document.getElementById('stage-order-input');
+        const overwriteModal = document.getElementById('overwrite-stage-modal');
+        const overwriteMessage = document.getElementById('overwrite-stage-modal-message');
+        const overwriteCancel = document.getElementById('overwrite-stage-cancel');
+        const overwriteConfirm = document.getElementById('overwrite-stage-confirm');
+        const openResetCycleModal = document.getElementById('open-reset-cycle-modal');
+        const resetCycleModal = document.getElementById('reset-cycle-modal');
+        const resetCycleCancel = document.getElementById('reset-cycle-cancel');
+        const existingOrders = [{% for stage in stages %}{{ stage.order }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+
+        let overwriteConfirmed = false;
+
+        if (!stageForm || !orderInput || !overwriteModal || !overwriteMessage || !overwriteCancel || !overwriteConfirm) {
+            return;
+        }
+
+        function openModal(orderValue) {
+            overwriteMessage.textContent = 'Stage order ' + orderValue + ' already exists and will be overwritten. Continue?';
+            overwriteModal.classList.remove('hidden');
+            overwriteModal.classList.add('flex');
+        }
+
+        function closeModal() {
+            overwriteModal.classList.add('hidden');
+            overwriteModal.classList.remove('flex');
+        }
+
+        stageForm.addEventListener('submit', function (event) {
+            const raw = (orderInput.value || '').trim();
+            const orderValue = Number(raw);
+
+            if (overwriteConfirmed) {
+                overwriteConfirmed = false;
+                return;
+            }
+
+            if (!raw || Number.isNaN(orderValue)) {
+                return;
+            }
+
+            if (existingOrders.includes(orderValue)) {
+                event.preventDefault();
+                openModal(orderValue);
+            }
+        });
+
+        overwriteCancel.addEventListener('click', closeModal);
+
+        overwriteConfirm.addEventListener('click', function () {
+            overwriteConfirmed = true;
+            closeModal();
+            stageForm.requestSubmit();
+        });
+
+        overwriteModal.addEventListener('click', function (event) {
+            if (event.target === overwriteModal) {
+                closeModal();
+            }
+        });
+
+        if (openResetCycleModal && resetCycleModal && resetCycleCancel) {
+            openResetCycleModal.addEventListener('click', function () {
+                resetCycleModal.classList.remove('hidden');
+                resetCycleModal.classList.add('flex');
+            });
+
+            resetCycleCancel.addEventListener('click', function () {
+                resetCycleModal.classList.add('hidden');
+                resetCycleModal.classList.remove('flex');
+            });
+
+            resetCycleModal.addEventListener('click', function (event) {
+                if (event.target === resetCycleModal) {
+                    resetCycleModal.classList.add('hidden');
+                    resetCycleModal.classList.remove('flex');
+                }
+            });
+        }
+    })();
+</script>
 {% endblock %}

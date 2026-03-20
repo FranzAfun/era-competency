@@ -18,6 +18,14 @@ QUESTIONS_PER_STAGE = 25
 PASSING_SCORE_PERCENT = 70
 
 
+def _get_active_stage_orders():
+    return list(
+        Stage.objects.filter(is_active=True)
+        .order_by('order')
+        .values_list('order', flat=True)
+    )
+
+
 def _generate_otp_code():
     return f"{random.randint(100000, 999999)}"
 
@@ -52,12 +60,15 @@ def _get_logged_in_executive(request):
     return Executive.objects.filter(id=executive_id).first()
 
 
-def _get_next_stage_for_executive(executive):
+def _get_next_stage_for_executive(executive, active_stage_orders=None):
+    if active_stage_orders is None:
+        active_stage_orders = _get_active_stage_orders()
+
     passed_stages = set(
         Assessment.objects.filter(executive=executive, passed=True).values_list('stage', flat=True)
     )
 
-    for stage_number in range(1, TOTAL_STAGES + 1):
+    for stage_number in active_stage_orders:
         if stage_number not in passed_stages:
             return stage_number
 
@@ -308,7 +319,8 @@ def dashboard(request):
         return redirect('/')
 
     assessments = Assessment.objects.filter(executive=executive).select_related('stage_ref').order_by('-created_at')
-    next_stage = _get_next_stage_for_executive(executive)
+    active_stage_orders = _get_active_stage_orders()
+    next_stage = _get_next_stage_for_executive(executive, active_stage_orders)
     latest_assessment = assessments.first()
 
     total_attempts = assessments.count()
@@ -316,6 +328,8 @@ def dashboard(request):
     completed_stage_count = assessments.filter(passed=True).values_list('stage', flat=True).distinct().count()
     overall_average_score = assessments.aggregate(avg=Avg('score'))['avg'] or 0
     overall_pass_rate = (pass_count / total_attempts) * 100 if total_attempts else 0
+    can_start_assessment = next_stage is not None
+    is_completed = bool(active_stage_orders) and next_stage is None
 
     user = request.session.get('user', {})
     user['name'] = executive.name
@@ -327,12 +341,15 @@ def dashboard(request):
         'user': user,
         'next_stage': next_stage,
         'next_stage_label': _get_stage_label(next_stage) if next_stage else None,
-        'is_completed': next_stage is None,
+        'is_completed': is_completed,
+        'can_start_assessment': can_start_assessment,
+        'has_active_stages': bool(active_stage_orders),
         'latest_assessment': latest_assessment,
         'overall_average_score': round(overall_average_score, 2),
         'overall_pass_rate': round(overall_pass_rate, 2),
         'total_attempts': total_attempts,
         'completed_stage_count': completed_stage_count,
+        'stage_count': len(active_stage_orders),
         'performance_history': assessments[:10],
     })
 
