@@ -52,7 +52,7 @@
             {% csrf_token %}
             <input type="hidden" name="edit_question_id" id="edit-question-id" value="">
 
-            <p class="text-brand-text-muted text-sm">Question order is automatic. Each new question is appended to the selected stage queue until 25 questions are reached.</p>
+            <p class="text-brand-text-muted text-sm">Question order is automatic. Each new question is appended to the selected stage queue until 25 questions have been reached, and they are serialized upon delivery.</p>
             <div id="edit-mode-info" class="hidden border border-amber-400/40 bg-amber-400/10 rounded-brand-input px-4 py-3 text-amber-200 text-sm"></div>
 
             <div class="grid grid-cols-1 gap-4">
