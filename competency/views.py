@@ -343,8 +343,7 @@ def start_assessment(request):
                     request.session['assessment_completed'] = True
                     return redirect('result')
 
-                feedback = None
-                selected_option_id = None
+                return redirect('start_assessment')
         else:
             if feedback:
                 error = 'Click Next to continue.'

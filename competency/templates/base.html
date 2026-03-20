@@ -82,6 +82,15 @@
                         return;
                     }
 
+                    // Add hidden input with the button's name/value so it's sent even if disabled
+                    if (submitter.name) {
+                        const hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.name = submitter.name;
+                        hiddenInput.value = submitter.value;
+                        form.appendChild(hiddenInput);
+                    }
+
                     submitter.dataset.loadingApplied = '1';
                     submitter.disabled = true;
 
