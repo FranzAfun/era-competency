@@ -86,8 +86,8 @@ http://127.0.0.1:8000
 - Executive login: /login/
 - Executive dashboard: /dashboard/
 - Assessment: /assessment/
-- Admin portal login: /portal/login/
-- Admin portal dashboard: /portal/
+- Admin Dashboard login: /* * * *
+- Admin dashboard: /* * * *
 
 ## Deployment
 
