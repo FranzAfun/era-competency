@@ -102,7 +102,7 @@ def _clear_assessment_session(request):
         request.session.pop(key, None)
 
 
-def _notify_admins_about_submission(assessment, total_questions):
+def _notify_admins_about_completion(assessment, total_questions):
     user_model = get_user_model()
     recipient_list = list(
         user_model.objects.filter(is_superuser=True)
@@ -115,13 +115,13 @@ def _notify_admins_about_submission(assessment, total_questions):
 
     executive = assessment.executive
     stage_label = assessment.stage_ref.name if assessment.stage_ref else f"Stage {assessment.stage}"
-    subject = f"ERA AXIS Competency - Assessment Submitted ({stage_label})"
+    subject = "ERA AXIS Competency - Executive Completed All 4 Stages"
     message = (
-        f"An assessment submission has been recorded.\n\n"
+        f"An executive has completed all competency stages.\n\n"
         f"Executive: {executive.name}\n"
         f"Email: {executive.email}\n"
         f"Role: {executive.role}\n"
-        f"Stage: {stage_label}\n"
+        f"Final Stage: {stage_label}\n"
         f"Attempt: {assessment.attempt_number}\n"
         f"Score: {assessment.score}%\n"
         f"Correct Answers: {assessment.correct_answers}/{total_questions}\n"
@@ -328,9 +328,16 @@ def start_assessment(request):
         })
 
     if request.method == 'POST':
-        action = request.POST.get('action', 'submit')
+        action = request.POST.get('action', '')
+        submitted_option_id = request.POST.get('option')
 
-        if action == 'next':
+        should_advance = action == 'next'
+        # Some browsers/client scripts can submit without button name/value.
+        # When feedback is present and no option is being submitted, treat it as Next.
+        if not should_advance and feedback and not submitted_option_id:
+            should_advance = True
+
+        if should_advance:
             if not feedback:
                 error = 'Please submit an answer first.'
             else:
@@ -348,8 +355,6 @@ def start_assessment(request):
             if feedback:
                 error = 'Click Next to continue.'
             else:
-                submitted_option_id = request.POST.get('option')
-
                 if not submitted_option_id:
                     error = 'Please select an option before continuing.'
                 else:
@@ -475,7 +480,8 @@ def result(request):
         for item in responses_to_create
     ])
 
-    _notify_admins_about_submission(assessment, total)
+    if assessment.stage == TOTAL_STAGES:
+        _notify_admins_about_completion(assessment, total)
 
     request.session['assessment_record_id'] = assessment.id
     _clear_assessment_session(request)

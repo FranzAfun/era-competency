@@ -32,7 +32,7 @@ pip install -r requirements.txt
 Create production env file:
 
 ```bash
-cp .env.example .env
+touch .env
 nano .env
 ```
 
@@ -43,6 +43,9 @@ Set at minimum:
 - `CSRF_TRUSTED_ORIGINS`
 - SMTP variables for OTP delivery
 
+Optional but recommended:
+- `DEFAULT_FROM_EMAIL`
+
 ## 5) Run migrations and collect static
 
 ```bash
@@ -50,6 +53,12 @@ source .venv/bin/activate
 python manage.py migrate
 python manage.py collectstatic --noinput
 python manage.py check --deploy
+```
+
+Create an admin user (for Django admin and admin portal access):
+
+```bash
+python manage.py createsuperuser
 ```
 
 ## 6) Create systemd service for Gunicorn
@@ -135,7 +144,8 @@ sudo ufw status
 - `systemctl status era-competency`
 - `journalctl -u era-competency -f`
 - OTP emails send successfully from login flow
-- Admin panel works at `/admin/`
+- Admin portal works at `/portal/login/`
+- Django admin works at `/admin/` (if needed)
 - Static files load without 404s
 
 ## 11) Update workflow

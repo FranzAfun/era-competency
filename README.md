@@ -1,110 +1,96 @@
 # ERA Competency
 
-Internal competency assessment platform for ERA AXIS executives.
+ERA Competency is a completed internal assessment platform for ERA AXIS executives.
 
-## Overview
+## Project Status
 
-ERA Competency is a lightweight web application used to evaluate the knowledge and competency of ERA AXIS executives through structured question and answer assessments.
+The platform is feature-complete for the current scope and is ready for production deployment on a single VM.
 
-The system allows the organization to serialize questions, present them to executives, collect responses, and review performance.
+## What The System Does
 
-The entire platform is built using **Django** and runs as a **self-contained application** where the frontend, backend, and database are managed within the same environment.
+- Executive login with OTP verification
+- Stage-based assessments (4 stages, 25 questions per stage)
+- Instant answer feedback and stage result scoring
+- Historical dashboard for executive progress
+- Admin portal for stage and question management
+- Question CRUD support (create, bulk upload, update, bulk delete)
+- Admin notifications when an executive completes Stage 4 (pass or fail)
 
 ## Technology Stack
 
-* Django
-* SQLite (default Django database)
-* HTML / CSS (Django templates)
-* JavaScript (minimal usage where required)
+- Django
+- SQLite (default)
+- Django templates (HTML/CSS)
+- Vanilla JavaScript (UI interactions)
 
 ## Architecture
 
-The platform is intentionally designed to remain simple:
+- Backend: Django
+- Frontend: Django Templates
+- Database: SQLite
+- Deployment model: Single VM (Gunicorn + Nginx + systemd)
 
-* Backend: Django
-* Frontend: Django Templates
-* Database: SQLite
-* Deployment: Single Virtual Machine
+## Local Development Setup
 
-This avoids the complexity of a split architecture (e.g., React frontend + API backend).
+1. Create a virtual environment.
 
-## Core Features (Planned)
-
-* Executive authentication
-* Serialized competency questions
-* Answer submission
-* Performance evaluation
-* Administrative question management
-* Reporting dashboard
-
-## Project Structure
-
-```
-era-competency/
-│
-├── core/              # Django project configuration
-├── manage.py
-├── requirements.txt
-└── README.md
-```
-
-Additional Django apps will be introduced as the system evolves.
-
-## Development Setup
-
-Create virtual environment:
-
-```
+```bash
 python -m venv venv
 ```
 
-Activate environment:
+2. Activate it.
 
-Windows
+Windows:
 
-```
+```bash
 venv\Scripts\activate
 ```
 
-Install dependencies:
+Linux/macOS:
 
+```bash
+source venv/bin/activate
 ```
+
+3. Install dependencies.
+
+```bash
 pip install -r requirements.txt
 ```
 
-Run migrations:
+4. Apply migrations.
 
-```
+```bash
 python manage.py migrate
 ```
 
-Start development server:
+5. Run the application.
 
-```
+```bash
 python manage.py runserver
 ```
 
-Open:
+6. Open in browser.
 
-```
+```text
 http://127.0.0.1:8000
 ```
 
+## Main Routes
+
+- Executive login: /login/
+- Executive dashboard: /dashboard/
+- Assessment: /assessment/
+- Admin portal login: /portal/login/
+- Admin portal dashboard: /portal/
+
 ## Deployment
 
-The system is intended to be deployed on a **single virtual machine**, hosting:
+For production deployment on GCP VM, follow:
 
-* Django application
-* SQLite database
-* Static files
+- DEPLOYMENT_GCP_VM.md
 
-This keeps infrastructure minimal and manageable.
-
-For full production deployment on a GCP VM (Gunicorn + Nginx + systemd + HTTPS), follow:
-
-* `DEPLOYMENT_GCP_VM.md`
-
-Before shipping to production, run:
+Recommended pre-production checks:
 
 ```bash
 python manage.py check --deploy

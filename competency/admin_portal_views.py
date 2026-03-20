@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import user_passes_test
 from django.db.models import Avg, Count, ExpressionWrapper, F, FloatField, Max, Q
 from django.http import HttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from openpyxl import Workbook, load_workbook
 
 from .models import Assessment, Executive, Option, Question, Stage
@@ -117,6 +117,46 @@ def admin_questions_view(request):
     active_stages = Stage.objects.filter(is_active=True).order_by('order')
 
     if request.method == 'POST':
+        if request.POST.get('bulk_delete_mode') == '1':
+            selected_ids_raw = request.POST.getlist('selected_question_ids')
+            if not selected_ids_raw:
+                messages.error(request, 'Select at least one question to delete.')
+                return redirect('admin_portal_questions')
+
+            selected_ids = []
+            for raw_id in selected_ids_raw:
+                try:
+                    selected_ids.append(int(raw_id))
+                except ValueError:
+                    continue
+
+            if not selected_ids:
+                messages.error(request, 'Selected question IDs are invalid.')
+                return redirect('admin_portal_questions')
+
+            questions = Question.objects.filter(id__in=selected_ids).select_related('stage_ref')
+            question_count = questions.count()
+
+            if question_count == 0:
+                messages.error(request, 'No matching questions were found to delete.')
+                return redirect('admin_portal_questions')
+
+            affected_stage_ids = set(
+                questions.exclude(stage_ref__isnull=True).values_list('stage_ref_id', flat=True)
+            )
+
+            questions.delete()
+
+            for stage_id in affected_stage_ids:
+                remaining = Question.objects.filter(stage_ref_id=stage_id).order_by('order', 'id')
+                for i, q in enumerate(remaining, start=1):
+                    if q.order != i:
+                        q.order = i
+                        q.save(update_fields=['order'])
+
+            messages.success(request, f'Deleted {question_count} question(s).')
+            return redirect('admin_portal_questions')
+
         if request.POST.get('upload_mode') == '1':
             stage_id = request.POST.get('upload_stage_id', '').strip()
             upload_file = request.FILES.get('questions_file')
@@ -152,6 +192,7 @@ def admin_questions_view(request):
             return redirect('admin_portal_questions')
 
         stage_id = request.POST.get('stage_id', '').strip()
+        edit_question_id_raw = request.POST.get('edit_question_id', '').strip()
         text = request.POST.get('text', '').strip()
         correct_option_raw = request.POST.get('correct_option', '').strip()
 
@@ -175,6 +216,64 @@ def admin_questions_view(request):
 
         if correct_option < 1 or correct_option > 4:
             messages.error(request, 'Correct option must be between 1 and 4.')
+            return redirect('admin_portal_questions')
+
+        if edit_question_id_raw:
+            try:
+                edit_question_id = int(edit_question_id_raw)
+            except ValueError:
+                messages.error(request, 'Invalid question selected for update.')
+                return redirect('admin_portal_questions')
+
+            question = Question.objects.filter(id=edit_question_id).select_related('stage_ref').first()
+            if question is None:
+                messages.error(request, 'Question not found for update.')
+                return redirect('admin_portal_questions')
+
+            existing_for_stage = Question.objects.filter(stage_ref=stage).exclude(id=question.id).count()
+            if existing_for_stage >= 25:
+                messages.error(request, f'{stage} already has 25 questions.')
+                return redirect('admin_portal_questions')
+
+            previous_stage_id = question.stage_ref_id
+            previous_order = question.order
+
+            question.text = text
+            if question.stage_ref_id != stage.id:
+                next_order = (Question.objects.filter(stage_ref=stage).aggregate(max_order=Max('order'))['max_order'] or 0) + 1
+                question.stage_ref = stage
+                question.stage = stage.order
+                question.order = next_order
+                question.save(update_fields=['text', 'stage_ref', 'stage', 'order'])
+                _reorder_stage_questions(previous_stage_id)
+            else:
+                question.stage = stage.order
+                question.save(update_fields=['text', 'stage'])
+
+            existing_options = list(question.options.order_by('id'))
+            if len(existing_options) != 4:
+                question.options.all().delete()
+                Option.objects.bulk_create([
+                    Option(question=question, text=options[0], is_correct=correct_option == 1),
+                    Option(question=question, text=options[1], is_correct=correct_option == 2),
+                    Option(question=question, text=options[2], is_correct=correct_option == 3),
+                    Option(question=question, text=options[3], is_correct=correct_option == 4),
+                ])
+            else:
+                for idx, option_obj in enumerate(existing_options, start=1):
+                    option_obj.text = options[idx - 1]
+                    option_obj.is_correct = correct_option == idx
+                Option.objects.bulk_update(existing_options, ['text', 'is_correct'])
+
+            current_order = question.order
+            current_stage_label = question.stage_ref.name if question.stage_ref else f'Stage {question.stage}'
+            if previous_stage_id == question.stage_ref_id:
+                messages.success(request, f'Updated Question #{current_order} in {current_stage_label}.')
+            else:
+                messages.success(
+                    request,
+                    f'Updated Question #{previous_order} and moved it to Question #{current_order} in {current_stage_label}.',
+                )
             return redirect('admin_portal_questions')
 
         existing_for_stage = Question.objects.filter(stage_ref=stage).count()
@@ -201,11 +300,43 @@ def admin_questions_view(request):
         messages.success(request, f'Question #{next_order} added to {stage}.')
         return redirect('admin_portal_questions')
 
-    question_rows = Question.objects.select_related('stage_ref').order_by('stage', 'order')[:100]
+    question_rows = list(Question.objects.select_related('stage_ref').prefetch_related('options').order_by('-id')[:100])
+    for question in question_rows:
+        ordered_options = list(question.options.all().order_by('id'))
+        while len(ordered_options) < 4:
+            ordered_options.append(None)
+
+        question.option_text_1 = ordered_options[0].text if ordered_options[0] else ''
+        question.option_text_2 = ordered_options[1].text if ordered_options[1] else ''
+        question.option_text_3 = ordered_options[2].text if ordered_options[2] else ''
+        question.option_text_4 = ordered_options[3].text if ordered_options[3] else ''
+        question.correct_option_index = ''
+
+        for idx, option_obj in enumerate(ordered_options[:4], start=1):
+            if option_obj and option_obj.is_correct:
+                question.correct_option_index = idx
+                break
+
+        question.stage_label = question.stage_ref.name if question.stage_ref else f'Stage {question.stage}'
+
     return render(request, 'admin_portal/questions.html', {
         'stages': active_stages,
         'question_rows': question_rows,
     })
+
+
+@user_passes_test(_is_portal_admin, login_url='admin_portal_login')
+def admin_delete_question_view(request, question_id):
+    if request.method == 'POST':
+        question = get_object_or_404(Question, id=question_id)
+        stage = question.stage_ref
+        question.delete()
+
+        _reorder_stage_questions(stage.id if stage else None)
+
+        messages.success(request, 'Question deleted successfully.')
+
+    return redirect('admin_portal_questions')
 
 
 @user_passes_test(_is_portal_admin, login_url='admin_portal_login')
@@ -326,3 +457,14 @@ def _normalize_header(value):
     raw = str(value or '').strip().lower()
     raw = re.sub(r'\s+', '_', raw)
     return raw
+
+
+def _reorder_stage_questions(stage_id):
+    if not stage_id:
+        return
+
+    remaining = Question.objects.filter(stage_ref_id=stage_id).order_by('order', 'id')
+    for index, question in enumerate(remaining, start=1):
+        if question.order != index:
+            question.order = index
+            question.save(update_fields=['order'])

@@ -4,6 +4,7 @@ from .admin_portal_views import (
     admin_login_view,
     admin_logout_view,
     admin_questions_view,
+    admin_delete_question_view,
     admin_questions_template_download_view,
     admin_stages_view,
 )
@@ -34,5 +35,6 @@ urlpatterns += [
     path('portal/', admin_dashboard_view, name='admin_portal_dashboard'),
     path('portal/stages/', admin_stages_view, name='admin_portal_stages'),
     path('portal/questions/', admin_questions_view, name='admin_portal_questions'),
+    path('portal/questions/<int:question_id>/delete/', admin_delete_question_view, name='admin_delete_question'),
     path('portal/questions/template/', admin_questions_template_download_view, name='admin_portal_questions_template'),
 ]

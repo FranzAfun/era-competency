@@ -48,15 +48,17 @@
             </div>
         {% endif %}
 
-        <form method="POST" class="space-y-4">
+        <form method="POST" class="space-y-4" id="question-form">
             {% csrf_token %}
+            <input type="hidden" name="edit_question_id" id="edit-question-id" value="">
 
             <p class="text-brand-text-muted text-sm">Question order is automatic. Each new question is appended to the selected stage queue until 25 questions are reached.</p>
+            <div id="edit-mode-info" class="hidden border border-amber-400/40 bg-amber-400/10 rounded-brand-input px-4 py-3 text-amber-200 text-sm"></div>
 
             <div class="grid grid-cols-1 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-brand-text-muted mb-2">Stage</label>
-                    <select name="stage_id" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none">
+                    <select id="field-stage-id" name="stage_id" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none">
                         <option value="">Select active stage</option>
                         {% for stage in stages %}
                             <option value="{{ stage.id }}">Stage {{ stage.order }} - {{ stage.name }}</option>
@@ -67,19 +69,19 @@
 
             <div>
                 <label class="block text-sm font-medium text-brand-text-muted mb-2">Question Text</label>
-                <textarea name="text" rows="3" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none" placeholder="Enter the full question text"></textarea>
+                <textarea id="field-question-text" name="text" rows="3" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none" placeholder="Enter the full question text"></textarea>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label class="block text-sm font-medium text-brand-text-muted mb-2">Option 1</label><input type="text" name="option_1" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none"></div>
-                <div><label class="block text-sm font-medium text-brand-text-muted mb-2">Option 2</label><input type="text" name="option_2" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none"></div>
-                <div><label class="block text-sm font-medium text-brand-text-muted mb-2">Option 3</label><input type="text" name="option_3" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none"></div>
-                <div><label class="block text-sm font-medium text-brand-text-muted mb-2">Option 4</label><input type="text" name="option_4" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none"></div>
+                <div><label class="block text-sm font-medium text-brand-text-muted mb-2">Option 1</label><input id="field-option-1" type="text" name="option_1" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none"></div>
+                <div><label class="block text-sm font-medium text-brand-text-muted mb-2">Option 2</label><input id="field-option-2" type="text" name="option_2" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none"></div>
+                <div><label class="block text-sm font-medium text-brand-text-muted mb-2">Option 3</label><input id="field-option-3" type="text" name="option_3" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none"></div>
+                <div><label class="block text-sm font-medium text-brand-text-muted mb-2">Option 4</label><input id="field-option-4" type="text" name="option_4" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none"></div>
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-brand-text-muted mb-2">Correct Option</label>
-                <select name="correct_option" required class="w-full md:w-64 bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none">
+                <select id="field-correct-option" name="correct_option" required class="w-full md:w-64 bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none">
                     <option value="">Select correct option</option>
                     <option value="1">Option 1</option>
                     <option value="2">Option 2</option>
@@ -88,16 +90,34 @@
                 </select>
             </div>
 
-            <button type="submit" class="w-full md:w-auto bg-brand-primary hover:bg-brand-primary-hover text-white font-bold py-3 px-6 rounded-brand-input transition-all uppercase">Save Question</button>
+            <div class="flex flex-wrap items-center gap-3">
+                <button type="submit" id="save-question-button" class="w-full md:w-auto bg-brand-primary hover:bg-brand-primary-hover text-white font-bold py-3 px-6 rounded-brand-input transition-all uppercase">Save Question</button>
+                <button type="button" id="cancel-edit-button" class="hidden w-full md:w-auto border border-brand-border hover:border-brand-text-muted text-brand-text-muted hover:text-white font-bold py-3 px-6 rounded-brand-input transition-all uppercase">Cancel Update</button>
+            </div>
         </form>
     </div>
 
     <div class="bg-brand-card rounded-brand p-6 border border-brand-border">
         <h2 class="text-white text-xl font-semibold mb-4">Recent Questions</h2>
+        <form method="POST" class="space-y-3" id="bulk-delete-form">
+            {% csrf_token %}
+            <input type="hidden" name="bulk_delete_mode" value="1">
+
+            <div class="flex items-center justify-between gap-3">
+                <label class="inline-flex items-center gap-2 text-sm text-brand-text-muted cursor-pointer">
+                    <input type="checkbox" id="select-all-questions" class="accent-brand-primary">
+                    <span>Select all</span>
+                </label>
+                <button type="submit" id="bulk-delete-button" class="bg-brand-error/90 hover:bg-brand-error text-white font-semibold py-2 px-4 rounded-brand-input text-sm transition-colors" disabled>
+                    Delete Selected
+                </button>
+            </div>
+
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead>
                     <tr class="text-brand-text-muted border-b border-brand-border">
+                        <th class="text-left py-2 pr-4 w-10">Select</th>
                         <th class="text-left py-2 pr-4">Stage</th>
                         <th class="text-left py-2 pr-4">Order</th>
                         <th class="text-left py-2">Question</th>
@@ -106,18 +126,235 @@
                 <tbody>
                     {% for question in question_rows %}
                         <tr class="border-b border-brand-border/50 text-brand-text-muted">
+                            <td class="py-3 pr-4">
+                                <input type="checkbox" name="selected_question_ids" value="{{ question.id }}" class="question-select-checkbox accent-brand-primary">
+                            </td>
                             <td class="py-3 pr-4">{{ question.stage_ref.name|default:question.stage }}</td>
                             <td class="py-3 pr-4 text-white">{{ question.order }}</td>
-                            <td class="py-3">{{ question.text|truncatechars:120 }}</td>
+                            <td class="py-3">
+                                <button
+                                    type="button"
+                                    class="question-edit-trigger w-full bg-transparent border-0 p-0 m-0 text-left text-brand-text-muted hover:text-white hover:underline transition-colors focus:outline-none"
+                                    data-question-id="{{ question.id }}"
+                                    data-stage-id="{{ question.stage_ref.id|default:'' }}"
+                                    data-stage-label="{{ question.stage_label|escapejs }}"
+                                    data-order="{{ question.order }}"
+                                    data-text="{{ question.text|escapejs }}"
+                                    data-option-1="{{ question.option_text_1|escapejs }}"
+                                    data-option-2="{{ question.option_text_2|escapejs }}"
+                                    data-option-3="{{ question.option_text_3|escapejs }}"
+                                    data-option-4="{{ question.option_text_4|escapejs }}"
+                                    data-correct-option="{{ question.correct_option_index }}"
+                                >
+                                    {{ question.text|truncatechars:120 }}
+                                </button>
+                            </td>
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="3" class="py-4 text-brand-text-muted">No questions yet.</td>
+                            <td colspan="4" class="py-4 text-brand-text-muted">No questions yet.</td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+        </form>
     </div>
 </div>
+
+<div id="bulk-delete-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 px-4">
+    <div class="w-full max-w-md rounded-brand border border-brand-border bg-brand-card p-6 shadow-2xl">
+        <h3 class="text-xl font-semibold text-white">Confirm Bulk Delete</h3>
+        <p id="bulk-delete-modal-message" class="mt-3 text-sm text-brand-text-muted">Delete selected questions?</p>
+        <div class="mt-6 flex flex-wrap justify-end gap-3">
+            <button type="button" id="bulk-delete-cancel" class="border border-brand-border hover:border-brand-text-muted text-brand-text-muted hover:text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Cancel</button>
+            <button type="button" id="bulk-delete-confirm" class="bg-brand-error hover:bg-red-500 text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Delete</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const selectAll = document.getElementById('select-all-questions');
+        const checkboxes = Array.from(document.querySelectorAll('.question-select-checkbox'));
+        const bulkDeleteButton = document.getElementById('bulk-delete-button');
+        const bulkDeleteForm = document.getElementById('bulk-delete-form');
+        const bulkDeleteModal = document.getElementById('bulk-delete-modal');
+        const bulkDeleteModalMessage = document.getElementById('bulk-delete-modal-message');
+        const bulkDeleteCancel = document.getElementById('bulk-delete-cancel');
+        const bulkDeleteConfirm = document.getElementById('bulk-delete-confirm');
+
+        const questionForm = document.getElementById('question-form');
+        const editQuestionId = document.getElementById('edit-question-id');
+        const fieldStageId = document.getElementById('field-stage-id');
+        const fieldQuestionText = document.getElementById('field-question-text');
+        const fieldOption1 = document.getElementById('field-option-1');
+        const fieldOption2 = document.getElementById('field-option-2');
+        const fieldOption3 = document.getElementById('field-option-3');
+        const fieldOption4 = document.getElementById('field-option-4');
+        const fieldCorrectOption = document.getElementById('field-correct-option');
+        const editInfo = document.getElementById('edit-mode-info');
+        const saveQuestionButton = document.getElementById('save-question-button');
+        const cancelEditButton = document.getElementById('cancel-edit-button');
+        const editTriggers = Array.from(document.querySelectorAll('.question-edit-trigger'));
+
+        let bulkDeleteConfirmed = false;
+
+        if (!selectAll || !bulkDeleteButton || !bulkDeleteForm) {
+            return;
+        }
+
+        function showBulkDeleteModal(selectedCount) {
+            if (!bulkDeleteModal || !bulkDeleteModalMessage) {
+                return;
+            }
+            bulkDeleteModalMessage.textContent = 'You are about to delete ' + selectedCount + ' question(s). This action cannot be undone.';
+            bulkDeleteModal.classList.remove('hidden');
+            bulkDeleteModal.classList.add('flex');
+        }
+
+        function hideBulkDeleteModal() {
+            if (!bulkDeleteModal) {
+                return;
+            }
+            bulkDeleteModal.classList.add('hidden');
+            bulkDeleteModal.classList.remove('flex');
+        }
+
+        function setEditMode(config) {
+            if (!questionForm || !editQuestionId || !fieldStageId || !fieldQuestionText || !fieldCorrectOption) {
+                return;
+            }
+
+            editQuestionId.value = config.questionId;
+            fieldStageId.value = config.stageId;
+            fieldQuestionText.value = config.text;
+            fieldOption1.value = config.option1;
+            fieldOption2.value = config.option2;
+            fieldOption3.value = config.option3;
+            fieldOption4.value = config.option4;
+            fieldCorrectOption.value = config.correctOption;
+
+            if (editInfo) {
+                editInfo.textContent = 'Updating Question #' + config.order + ' in ' + config.stageLabel + '.';
+                editInfo.classList.remove('hidden');
+            }
+
+            if (saveQuestionButton) {
+                saveQuestionButton.textContent = 'Update Question';
+            }
+
+            if (cancelEditButton) {
+                cancelEditButton.classList.remove('hidden');
+            }
+
+            questionForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            fieldQuestionText.focus();
+        }
+
+        function clearEditMode() {
+            if (!questionForm || !editQuestionId || !fieldStageId || !fieldQuestionText || !fieldCorrectOption) {
+                return;
+            }
+
+            editQuestionId.value = '';
+            questionForm.reset();
+
+            if (editInfo) {
+                editInfo.classList.add('hidden');
+                editInfo.textContent = '';
+            }
+
+            if (saveQuestionButton) {
+                saveQuestionButton.textContent = 'Save Question';
+            }
+
+            if (cancelEditButton) {
+                cancelEditButton.classList.add('hidden');
+            }
+        }
+
+        function refreshBulkDeleteState() {
+            const selectedCount = checkboxes.filter((checkbox) => checkbox.checked).length;
+            bulkDeleteButton.disabled = selectedCount === 0;
+            selectAll.checked = checkboxes.length > 0 && selectedCount === checkboxes.length;
+        }
+
+        selectAll.addEventListener('change', function () {
+            checkboxes.forEach((checkbox) => {
+                checkbox.checked = selectAll.checked;
+            });
+            refreshBulkDeleteState();
+        });
+
+        checkboxes.forEach((checkbox) => {
+            checkbox.addEventListener('change', refreshBulkDeleteState);
+        });
+
+        bulkDeleteForm.addEventListener('submit', function (event) {
+            const selectedCount = checkboxes.filter((checkbox) => checkbox.checked).length;
+            if (selectedCount === 0) {
+                event.preventDefault();
+                return;
+            }
+
+            if (!bulkDeleteConfirmed) {
+                event.preventDefault();
+                showBulkDeleteModal(selectedCount);
+                return;
+            }
+
+            bulkDeleteConfirmed = false;
+        });
+
+        if (bulkDeleteCancel) {
+            bulkDeleteCancel.addEventListener('click', function () {
+                hideBulkDeleteModal();
+            });
+        }
+
+        if (bulkDeleteConfirm) {
+            bulkDeleteConfirm.addEventListener('click', function () {
+                bulkDeleteConfirmed = true;
+                hideBulkDeleteModal();
+                bulkDeleteForm.requestSubmit();
+            });
+        }
+
+        if (bulkDeleteModal) {
+            bulkDeleteModal.addEventListener('click', function (event) {
+                if (event.target === bulkDeleteModal) {
+                    hideBulkDeleteModal();
+                }
+            });
+        }
+
+        if (cancelEditButton) {
+            cancelEditButton.addEventListener('click', function () {
+                clearEditMode();
+            });
+        }
+
+        editTriggers.forEach((trigger) => {
+            trigger.addEventListener('click', function () {
+                const config = {
+                    questionId: trigger.dataset.questionId || '',
+                    stageId: trigger.dataset.stageId || '',
+                    stageLabel: trigger.dataset.stageLabel || 'selected stage',
+                    order: trigger.dataset.order || '',
+                    text: trigger.dataset.text || '',
+                    option1: trigger.dataset.option1 || '',
+                    option2: trigger.dataset.option2 || '',
+                    option3: trigger.dataset.option3 || '',
+                    option4: trigger.dataset.option4 || '',
+                    correctOption: trigger.dataset.correctOption || '',
+                };
+
+                setEditMode(config);
+            });
+        });
+
+        refreshBulkDeleteState();
+    })();
+</script>
 {% endblock %}
