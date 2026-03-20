@@ -136,6 +136,64 @@ def _notify_admins_about_completion(assessment, total_questions):
         fail_silently=True,
     )
 
+
+def _notify_admins_about_three_failed_attempts(assessment):
+    user_model = get_user_model()
+    recipient_list = list(
+        user_model.objects.filter(is_superuser=True)
+        .exclude(email='')
+        .values_list('email', flat=True)
+    )
+
+    if not recipient_list:
+        return
+
+    executive = assessment.executive
+    stage_label = assessment.stage_ref.name if assessment.stage_ref else f"Stage {assessment.stage}"
+    subject = f"ERA AXIS Competency - 3 Failed Attempts ({stage_label})"
+    message = (
+        f"An executive has reached 3 failed attempts on the same stage.\n\n"
+        f"Executive: {executive.name}\n"
+        f"Email: {executive.email}\n"
+        f"Role: {executive.role}\n"
+        f"Stage: {stage_label}\n"
+        f"Latest Attempt Number: {assessment.attempt_number}\n"
+        f"Latest Score: {assessment.score}%\n"
+    )
+
+    send_mail(
+        subject=subject,
+        message=message,
+        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
+        recipient_list=recipient_list,
+        fail_silently=True,
+    )
+
+
+def _notify_executive_about_stage_pass(assessment, total_questions):
+    executive = assessment.executive
+    if not executive.email:
+        return
+
+    stage_label = assessment.stage_ref.name if assessment.stage_ref else f"Stage {assessment.stage}"
+    subject = f"ERA AXIS Competency - You Passed {stage_label}"
+    message = (
+        f"Congratulations {executive.name},\n\n"
+        f"You passed {stage_label}.\n"
+        f"Score: {assessment.score}%\n"
+        f"Correct Answers: {assessment.correct_answers}/{total_questions}\n"
+        f"Attempt: {assessment.attempt_number}\n\n"
+        f"You can now continue with your competency journey."
+    )
+
+    send_mail(
+        subject=subject,
+        message=message,
+        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
+        recipient_list=[executive.email],
+        fail_silently=True,
+    )
+
 def login_view(request):
     errors = {}
 
@@ -379,6 +437,7 @@ def start_assessment(request):
                             request.session['assessment_feedback'] = {
                                 'is_correct': selected_option.is_correct,
                                 'message': 'Correct answer.' if selected_option.is_correct else 'Incorrect answer.',
+                                'explanation': selected_option.question.explanation,
                             }
 
                             feedback = request.session['assessment_feedback']
@@ -482,6 +541,17 @@ def result(request):
 
     if assessment.stage == TOTAL_STAGES:
         _notify_admins_about_completion(assessment, total)
+
+    if assessment.passed:
+        _notify_executive_about_stage_pass(assessment, total)
+    else:
+        failed_attempts = Assessment.objects.filter(
+            executive=executive,
+            stage=assessment.stage,
+            passed=False,
+        ).count()
+        if failed_attempts == 3:
+            _notify_admins_about_three_failed_attempts(assessment)
 
     request.session['assessment_record_id'] = assessment.id
     _clear_assessment_session(request)

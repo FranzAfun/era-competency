@@ -10,10 +10,14 @@ The platform is feature-complete for the current scope and is ready for producti
 
 - Executive login with OTP verification
 - Stage-based assessments (4 stages, 25 questions per stage)
-- Instant answer feedback and stage result scoring
+- Instant answer feedback with explanation after each submitted answer
+- Stage pass gating: users must pass the current stage before moving to the next stage
+- Stage retry support: failed stages can be retaken until passed
 - Historical dashboard for executive progress
 - Admin portal for stage and question management
-- Question CRUD support (create, bulk upload, update, bulk delete)
+- Question CRUD support (create, bulk upload, update, bulk delete) including explanation fields
+- User email notification when a stage is passed
+- Admin alert when an executive reaches 3 failed attempts on the same stage
 - Admin notifications when an executive completes Stage 4 (pass or fail)
 
 ## Technology Stack

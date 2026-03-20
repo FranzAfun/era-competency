@@ -194,6 +194,7 @@ def admin_questions_view(request):
         stage_id = request.POST.get('stage_id', '').strip()
         edit_question_id_raw = request.POST.get('edit_question_id', '').strip()
         text = request.POST.get('text', '').strip()
+        explanation = request.POST.get('explanation', '').strip()
         correct_option_raw = request.POST.get('correct_option', '').strip()
 
         options = [
@@ -203,8 +204,8 @@ def admin_questions_view(request):
             request.POST.get('option_4', '').strip(),
         ]
 
-        if not stage_id or not text or not correct_option_raw or any(not opt for opt in options):
-            messages.error(request, 'Please complete all question and option fields.')
+        if not stage_id or not text or not explanation or not correct_option_raw or any(not opt for opt in options):
+            messages.error(request, 'Please complete all question fields, including explanation and options.')
             return redirect('admin_portal_questions')
 
         try:
@@ -239,16 +240,17 @@ def admin_questions_view(request):
             previous_order = question.order
 
             question.text = text
+            question.explanation = explanation
             if question.stage_ref_id != stage.id:
                 next_order = (Question.objects.filter(stage_ref=stage).aggregate(max_order=Max('order'))['max_order'] or 0) + 1
                 question.stage_ref = stage
                 question.stage = stage.order
                 question.order = next_order
-                question.save(update_fields=['text', 'stage_ref', 'stage', 'order'])
+                question.save(update_fields=['text', 'explanation', 'stage_ref', 'stage', 'order'])
                 _reorder_stage_questions(previous_stage_id)
             else:
                 question.stage = stage.order
-                question.save(update_fields=['text', 'stage'])
+                question.save(update_fields=['text', 'explanation', 'stage'])
 
             existing_options = list(question.options.order_by('id'))
             if len(existing_options) != 4:
@@ -285,6 +287,7 @@ def admin_questions_view(request):
 
         question = Question.objects.create(
             text=text,
+            explanation=explanation,
             stage=stage.order,
             stage_ref=stage,
             order=next_order,
@@ -310,6 +313,7 @@ def admin_questions_view(request):
         question.option_text_2 = ordered_options[1].text if ordered_options[1] else ''
         question.option_text_3 = ordered_options[2].text if ordered_options[2] else ''
         question.option_text_4 = ordered_options[3].text if ordered_options[3] else ''
+        question.explanation_text = question.explanation or ''
         question.correct_option_index = ''
 
         for idx, option_obj in enumerate(ordered_options[:4], start=1):
@@ -344,8 +348,8 @@ def admin_questions_template_download_view(request):
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = 'Questions Template'
-    sheet.append(['question_text', 'option_1', 'option_2', 'option_3', 'option_4', 'correct_option'])
-    sheet.append(['What is 2 + 2?', '3', '4', '5', '6', 2])
+    sheet.append(['question_text', 'explanation', 'option_1', 'option_2', 'option_3', 'option_4', 'correct_option'])
+    sheet.append(['What is 2 + 2?', '2 + 2 equals 4 because basic addition combines two pairs.', '3', '4', '5', '6', 2])
 
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -390,10 +394,10 @@ def _import_questions_from_xlsx(upload_file, stage):
         raise ValueError('The uploaded file is empty.')
 
     header = [_normalize_header(cell) for cell in rows[0]]
-    required_header = ['question_text', 'option_1', 'option_2', 'option_3', 'option_4', 'correct_option']
-    if header[:6] != required_header:
+    required_header = ['question_text', 'explanation', 'option_1', 'option_2', 'option_3', 'option_4', 'correct_option']
+    if header[:7] != required_header:
         raise ValueError(
-            'Invalid template columns. Required columns are: question_text, option_1, option_2, option_3, option_4, correct_option.'
+            'Invalid template columns. Required columns are: question_text, explanation, option_1, option_2, option_3, option_4, correct_option.'
         )
 
     existing_count = Question.objects.filter(stage_ref=stage).count()
@@ -409,15 +413,15 @@ def _import_questions_from_xlsx(upload_file, stage):
         if imported_count >= remaining_slots:
             break
 
-        normalized = [str(value).strip() if value is not None else '' for value in row[:6]]
+        normalized = [str(value).strip() if value is not None else '' for value in row[:7]]
         if not any(normalized):
             continue
 
-        if len(normalized) < 6 or any(not item for item in normalized[:5]):
+        if len(normalized) < 7 or any(not item for item in normalized[:6]):
             skipped_count += 1
             continue
 
-        question_text, option_1, option_2, option_3, option_4, correct_option_raw = normalized[:6]
+        question_text, explanation, option_1, option_2, option_3, option_4, correct_option_raw = normalized[:7]
         if not question_text:
             skipped_count += 1
             continue
@@ -434,6 +438,7 @@ def _import_questions_from_xlsx(upload_file, stage):
 
         question = Question.objects.create(
             text=question_text,
+            explanation=explanation,
             stage=stage.order,
             stage_ref=stage,
             order=next_order,

@@ -28,6 +28,7 @@ class Executive(models.Model):
 
 class Question(models.Model):
 	text = models.TextField()
+	explanation = models.TextField(blank=True, default='')
 	stage = models.IntegerField()
 	stage_ref = models.ForeignKey(Stage, on_delete=models.SET_NULL, null=True, blank=True, related_name='questions')
 	order = models.IntegerField()
