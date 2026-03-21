@@ -41,10 +41,11 @@
             }
         }
     </script>
+
     <style type="text/tailwindcss">
         @layer base {
             body {
-                @apply bg-brand-bg text-white font-sans min-h-screen flex items-center justify-center;
+                @apply bg-brand-bg text-white font-sans min-h-screen flex flex-col;
             }
             h1, h2, h3, h4, h5, h6 {
                 @apply font-heading;
@@ -70,10 +71,15 @@
         }
     </style>
 </head>
-<body class="bg-brand-bg">
-    <div class="container mx-auto px-4 py-8 flex items-center justify-center min-h-screen">
+
+<body class="bg-brand-bg flex flex-col min-h-screen">
+    <div class="container mx-auto px-4 py-8 flex-1 flex items-center justify-center">
         {% block content %}{% endblock %}
     </div>
+
+    <footer class="w-full text-center text-sm text-brand-text-muted py-4">
+        ERA AXIS Competency © 2026 · Developed by ERA Technologies
+    </footer>
 
     <script>
         (function () {
@@ -86,7 +92,6 @@
                         return;
                     }
 
-                    // Add hidden input with the button's name/value so it's sent even if disabled
                     if (submitter.name) {
                         const hiddenInput = document.createElement('input');
                         hiddenInput.type = 'hidden';
