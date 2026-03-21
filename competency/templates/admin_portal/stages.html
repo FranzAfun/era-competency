@@ -9,11 +9,11 @@
         <a href="{% url 'admin_portal_dashboard' %}" class="inline-flex items-center justify-center text-sm font-medium text-brand-text-muted border border-brand-border px-4 py-2 rounded-brand-input hover:text-white hover:border-brand-text-muted transition-colors">Back to Dashboard</a>
     </div>
 
-    <div class="bg-brand-card rounded-brand p-6 border border-brand-border">
+    <div class="bg-brand-card rounded-brand p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
         <div class="mb-6 rounded-brand border border-red-400/40 bg-red-500/10 p-4">
             <h2 class="text-white text-lg font-semibold">Start New Cycle</h2>
             <p class="text-red-200 text-sm mt-2">This will reset all executive assessment history and re-open the assessment flow from the first active stage. Use this only when starting a fresh test cycle.</p>
-            <button type="button" id="open-reset-cycle-modal" class="mt-4 bg-red-500 hover:bg-red-400 text-white font-bold py-2 px-4 rounded-brand-input transition-colors uppercase text-sm">Reset Executive Progress</button>
+            <button type="button" id="open-reset-cycle-modal" class="mt-4 bg-red-500 hover:bg-red-400 hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-2 px-4 rounded-brand-input transition-all uppercase text-sm">Reset Executive Progress</button>
         </div>
 
         {% if messages %}
@@ -43,7 +43,7 @@
         </form>
     </div>
 
-    <div class="bg-brand-card rounded-brand p-6 border border-brand-border">
+    <div class="bg-brand-card rounded-brand p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
         <h2 class="text-white text-xl font-semibold mb-4">Configured Stages</h2>
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">

@@ -117,13 +117,13 @@
     </div>
 </div>
 
-<div id="start-stage-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 px-4">
+<div id="start-stage-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-[1px] px-4">
     <div class="w-full max-w-md rounded-brand border border-brand-border bg-brand-card p-6 shadow-2xl">
         <h3 class="text-xl font-semibold text-white">Start Assessment</h3>
         <p class="mt-3 text-sm text-brand-text-muted">You are about to begin {{ next_stage_label }}. Continue?</p>
         <div class="mt-6 flex flex-wrap justify-end gap-3">
             <button type="button" id="start-stage-cancel" class="border border-brand-border hover:border-brand-text-muted text-brand-text-muted hover:text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Cancel</button>
-            <a href="/assessment/" class="bg-brand-primary hover:bg-brand-primary-hover text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Start</a>
+            <a href="/assessment/" class="bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-semibold py-2 px-4 rounded-brand-input transition-all">Start</a>
         </div>
     </div>
 </div>

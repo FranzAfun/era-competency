@@ -12,7 +12,7 @@
         </div>
     </div>
 
-    <div class="bg-brand-card rounded-brand p-6 border border-brand-border">
+    <div class="bg-brand-card rounded-brand p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
         <h2 class="text-white text-xl font-semibold mb-3">Bulk Upload from Excel</h2>
         <p class="text-brand-text-muted text-sm mb-4">Use the template file (including the explanation column), select a stage, and upload. Import stops automatically when the stage reaches 25 questions.</p>
 
@@ -32,14 +32,14 @@
 
             <div>
                 <label class="block text-sm font-medium text-brand-text-muted mb-2">Excel File (.xlsx)</label>
-                <input type="file" name="questions_file" accept=".xlsx" required class="w-full bg-slate-700/40 border border-brand-border rounded-brand-input px-4 py-3 text-brand-text-muted focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none file:mr-3 file:rounded file:border-0 file:bg-slate-600 file:px-2 file:py-0 file:font-medium file:text-slate-100 file:hover:bg-slate-500">
+                <input type="file" name="questions_file" accept=".xlsx" required class="w-full bg-slate-700/35 border border-brand-border rounded-brand-input px-4 py-3 text-brand-text-muted focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none file:mr-3 file:rounded-md file:border-0 file:bg-slate-600 file:px-4 file:py-2 file:font-medium file:text-slate-100 file:hover:bg-slate-500">
             </div>
 
             <button type="submit" class="w-full bg-brand-primary hover:bg-brand-primary-hover text-white font-bold py-3 px-6 rounded-brand-input transition-all uppercase">Upload Questions</button>
         </form>
     </div>
 
-    <div class="bg-brand-card rounded-brand p-6 border border-brand-border">
+    <div class="bg-brand-card rounded-brand p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
         {% if messages %}
             <div class="space-y-2 mb-4">
                 {% for message in messages %}
@@ -102,7 +102,7 @@
         </form>
     </div>
 
-    <div class="bg-brand-card rounded-brand p-6 border border-brand-border">
+    <div class="bg-brand-card rounded-brand p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
         <h2 class="text-white text-xl font-semibold mb-4">Recent Questions</h2>
         <form method="POST" class="space-y-3" id="bulk-delete-form">
             {% csrf_token %}
