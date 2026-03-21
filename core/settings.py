@@ -164,6 +164,10 @@ PROJECT_STATIC_DIR = BASE_DIR / 'static'
 if PROJECT_STATIC_DIR.exists():
     STATICFILES_DIRS.append(PROJECT_STATIC_DIR)
 
+CORE_STATIC_DIR = BASE_DIR / 'core' / 'static'
+if CORE_STATIC_DIR.exists():
+    STATICFILES_DIRS.append(CORE_STATIC_DIR)
+
 
 # Reverse proxy / SSL termination (Nginx on GCP VM)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
