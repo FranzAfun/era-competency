@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Question, Option, Executive, Assessment, Response, Stage, LoginOTP
+from .models import Assessment, AssessmentCycle, Executive, LoginOTP, Option, Question, Response, Stage
 
 
 class OptionInline(admin.TabularInline):
@@ -31,9 +31,16 @@ class ExecutiveAdmin(admin.ModelAdmin):
 
 @admin.register(Assessment)
 class AssessmentAdmin(admin.ModelAdmin):
-	list_display = ('id', 'executive', 'stage', 'stage_ref', 'attempt_number', 'correct_answers', 'total_questions', 'score', 'passed', 'created_at')
-	list_filter = ('passed', 'stage', 'stage_ref')
+	list_display = ('id', 'executive', 'cycle', 'stage', 'stage_name', 'stage_ref', 'attempt_number', 'correct_answers', 'total_questions', 'score', 'passed', 'created_at')
+	list_filter = ('cycle', 'passed', 'stage', 'stage_ref')
 	search_fields = ('executive__name', 'executive__email')
+
+
+@admin.register(AssessmentCycle)
+class AssessmentCycleAdmin(admin.ModelAdmin):
+	list_display = ('sequence', 'name', 'is_current', 'created_at')
+	list_filter = ('is_current',)
+	search_fields = ('name',)
 
 
 @admin.register(LoginOTP)

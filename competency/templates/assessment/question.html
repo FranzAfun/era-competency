@@ -63,17 +63,68 @@
                     </div>
                 {% endif %}
 
-                {% if feedback %}
-                    <button type="submit" name="action" value="next" class="w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-3 px-6 rounded-brand-input transition-all duration-200 uppercase">
-                        {% if is_last_question %}Finish Stage{% else %}Next Question{% endif %}
+                <div class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <button type="button" id="open-save-exit-modal" class="w-full sm:w-auto border border-brand-border hover:border-brand-text-muted text-brand-text-muted hover:text-white font-semibold py-3 px-5 rounded-brand-input transition-colors">
+                        Save and Exit
                     </button>
-                {% else %}
-                    <button type="submit" name="action" value="submit" class="w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-3 px-6 rounded-brand-input transition-all duration-200 uppercase">
-                        Submit Answer
-                    </button>
-                {% endif %}
+
+                    {% if feedback %}
+                        <button type="submit" name="action" value="next" class="w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-3 px-6 rounded-brand-input transition-all duration-200 uppercase">
+                            {% if is_last_question %}Finish Stage{% else %}Next Question{% endif %}
+                        </button>
+                    {% else %}
+                        <button type="submit" name="action" value="submit" class="w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-3 px-6 rounded-brand-input transition-all duration-200 uppercase">
+                            Submit Answer
+                        </button>
+                    {% endif %}
+                </div>
             </form>
         {% endif %}
     </div>
 </div>
+
+{% if not assessment_unavailable %}
+<div id="save-exit-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-[1px] px-4">
+    <div class="w-full max-w-md rounded-brand border border-brand-border bg-brand-card p-6 shadow-2xl">
+        <h3 class="text-xl font-semibold text-white">Save and Exit Assessment</h3>
+        <p class="mt-3 text-sm text-brand-text-muted">Your progress for this stage will be saved so you can continue later from the dashboard. Exit now?</p>
+        <div class="mt-6 flex flex-wrap justify-end gap-3">
+            <button type="button" id="save-exit-cancel" class="border border-brand-border hover:border-brand-text-muted text-brand-text-muted hover:text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Cancel</button>
+            <form method="POST">
+                {% csrf_token %}
+                <button type="submit" name="action" value="save_exit" class="bg-brand-primary hover:bg-brand-primary-hover text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Save and Exit</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const openButton = document.getElementById('open-save-exit-modal');
+        const modal = document.getElementById('save-exit-modal');
+        const cancelButton = document.getElementById('save-exit-cancel');
+
+        if (!openButton || !modal || !cancelButton) {
+            return;
+        }
+
+        openButton.addEventListener('click', function () {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        });
+
+        cancelButton.addEventListener('click', function () {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        });
+
+        modal.addEventListener('click', function (event) {
+            if (event.target === modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        });
+    })();
+</script>
+{% endif %}
 {% endblock %}

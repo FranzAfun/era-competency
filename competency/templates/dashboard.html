@@ -8,6 +8,7 @@
         <h1 class="text-white text-3xl font-semibold mb-6">Welcome, {{ user.name }}</h1>
 
         <div class="space-y-4 mb-6 text-brand-text-muted">
+            <p><span class="text-white font-medium">Current Assessment Cycle:</span> {{ current_cycle.name }}</p>
             <p><span class="text-white font-medium">Email:</span> {{ user.email }}</p>
             <p><span class="text-white font-medium">Role:</span> {{ user.role }}</p>
             <p><span class="text-white font-medium">Date:</span> {{ user.date }}</p>
@@ -47,7 +48,7 @@
             </button>
         {% else %}
             <button type="button" id="open-start-modal" class="inline-flex w-full sm:w-auto items-center justify-center bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-4 px-6 rounded-brand-input transition-all duration-200 uppercase">
-                Start {{ next_stage_label }}
+                {% if has_saved_progress %}Continue {{ next_stage_label }}{% else %}Start {{ next_stage_label }}{% endif %}
             </button>
         {% endif %}
 
@@ -84,6 +85,7 @@
             <table class="min-w-full text-sm">
                 <thead>
                     <tr class="text-brand-text-muted border-b border-brand-border">
+                        <th class="text-left py-2 pr-4">Cycle</th>
                         <th class="text-left py-2 pr-4">Date</th>
                         <th class="text-left py-2 pr-4">Stage</th>
                         <th class="text-left py-2 pr-4">Attempt</th>
@@ -94,8 +96,17 @@
                 <tbody>
                     {% for item in performance_history %}
                         <tr class="border-b border-brand-border/50 text-brand-text-muted">
+                            <td class="py-3 pr-4">{{ item.cycle.name|default:"Assessment 1" }}</td>
                             <td class="py-3 pr-4">{{ item.created_at|date:"M d, Y H:i" }}</td>
-                            <td class="py-3 pr-4">{{ item.stage_ref.name|default:item.stage }}</td>
+                            <td class="py-3 pr-4">
+                                {% if item.stage_name %}
+                                    {{ item.stage_name }}
+                                {% elif item.stage_ref %}
+                                    {{ item.stage_ref.name }}
+                                {% else %}
+                                    Stage {{ item.stage }}
+                                {% endif %}
+                            </td>
                             <td class="py-3 pr-4">#{{ item.attempt_number }}</td>
                             <td class="py-3 pr-4 text-white">{{ item.score }}%</td>
                             <td class="py-3">
@@ -108,7 +119,7 @@
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="5" class="py-4 text-brand-text-muted">No previous attempts yet.</td>
+                            <td colspan="6" class="py-4 text-brand-text-muted">No previous attempts yet.</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -119,11 +130,17 @@
 
 <div id="start-stage-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-[1px] px-4">
     <div class="w-full max-w-md rounded-brand border border-brand-border bg-brand-card p-6 shadow-2xl">
-        <h3 class="text-xl font-semibold text-white">Start Assessment</h3>
-        <p class="mt-3 text-sm text-brand-text-muted">You are about to begin {{ next_stage_label }}. Continue?</p>
+        <h3 class="text-xl font-semibold text-white">{% if has_saved_progress %}Continue Assessment{% else %}Start Assessment{% endif %}</h3>
+        <p class="mt-3 text-sm text-brand-text-muted">
+            {% if has_saved_progress %}
+                You have saved progress in {{ next_stage_label }} for {{ current_cycle.name }}. Continue where you left off?
+            {% else %}
+                You are about to begin {{ next_stage_label }} in {{ current_cycle.name }}. Continue?
+            {% endif %}
+        </p>
         <div class="mt-6 flex flex-wrap justify-end gap-3">
             <button type="button" id="start-stage-cancel" class="border border-brand-border hover:border-brand-text-muted text-brand-text-muted hover:text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Cancel</button>
-            <a href="/assessment/" class="bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-semibold py-2 px-4 rounded-brand-input transition-all">Start</a>
+            <a href="/assessment/" class="bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-semibold py-2 px-4 rounded-brand-input transition-all">{% if has_saved_progress %}Continue{% else %}Start{% endif %}</a>
         </div>
     </div>
 </div>

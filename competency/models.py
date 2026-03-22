@@ -15,6 +15,19 @@ class Stage(models.Model):
 		return f"Stage {self.order}: {self.name}"
 
 
+class AssessmentCycle(models.Model):
+	name = models.CharField(max_length=120)
+	sequence = models.PositiveIntegerField(unique=True)
+	is_current = models.BooleanField(default=False)
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ['-sequence']
+
+	def __str__(self):
+		return self.name
+
+
 class Executive(models.Model):
 	name = models.CharField(max_length=255)
 	role = models.CharField(max_length=100)
@@ -57,7 +70,9 @@ class Option(models.Model):
 
 class Assessment(models.Model):
 	executive = models.ForeignKey(Executive, on_delete=models.CASCADE)
+	cycle = models.ForeignKey(AssessmentCycle, on_delete=models.PROTECT, related_name='assessments', null=True, blank=True)
 	stage = models.IntegerField()
+	stage_name = models.CharField(max_length=120, blank=True, default='')
 	stage_ref = models.ForeignKey(Stage, on_delete=models.SET_NULL, null=True, blank=True, related_name='assessments')
 	attempt_number = models.PositiveIntegerField(default=1)
 	correct_answers = models.PositiveIntegerField(default=0)

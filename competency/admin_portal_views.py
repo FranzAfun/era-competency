@@ -8,11 +8,25 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from openpyxl import Workbook, load_workbook
 
-from .models import Assessment, Executive, Option, Question, Stage
+from .models import Assessment, AssessmentCycle, Executive, Option, Question, Stage
 
 
 def _is_portal_admin(user):
     return user.is_authenticated and (user.is_staff or user.is_superuser)
+
+
+def _get_current_cycle():
+    current_cycle = AssessmentCycle.objects.filter(is_current=True).order_by('-sequence').first()
+    if current_cycle:
+        return current_cycle
+
+    latest_cycle = AssessmentCycle.objects.order_by('-sequence').first()
+    next_sequence = latest_cycle.sequence + 1 if latest_cycle else 1
+    return AssessmentCycle.objects.create(
+        name=f'Assessment {next_sequence}',
+        sequence=next_sequence,
+        is_current=True,
+    )
 
 
 def admin_login_view(request):
@@ -45,6 +59,7 @@ def admin_logout_view(request):
 
 @user_passes_test(_is_portal_admin, login_url='admin_portal_login')
 def admin_dashboard_view(request):
+    current_cycle = _get_current_cycle()
     stage_stats = []
     for stage in Stage.objects.order_by('order'):
         question_count = Question.objects.filter(stage_ref=stage).count()
@@ -67,8 +82,9 @@ def admin_dashboard_view(request):
         'total_questions': Question.objects.count(),
         'total_assessments': Assessment.objects.count(),
         'overall_pass_rate': _overall_pass_rate(),
+        'current_cycle': current_cycle,
         'stage_stats': stage_stats,
-        'recent_assessments': Assessment.objects.select_related('executive', 'stage_ref').order_by('-created_at')[:10],
+        'recent_assessments': Assessment.objects.select_related('executive', 'stage_ref', 'cycle').order_by('-created_at')[:10],
         'difficult_questions': _get_difficult_questions(),
     }
 
@@ -152,15 +168,18 @@ def admin_reset_cycle_view(request):
     if request.method != 'POST':
         return redirect('admin_portal_stages')
 
-    total_assessments = Assessment.objects.count()
-    executive_count = Assessment.objects.values('executive_id').distinct().count()
+    current_cycle = _get_current_cycle()
+    latest_cycle = AssessmentCycle.objects.order_by('-sequence').first()
+    next_sequence = latest_cycle.sequence + 1 if latest_cycle else 1
 
-    Assessment.objects.all().delete()
-
-    messages.success(
-        request,
-        f'New cycle started. Cleared {total_assessments} assessment record(s) across {executive_count} executive(s).',
+    AssessmentCycle.objects.filter(id=current_cycle.id).update(is_current=False)
+    new_cycle = AssessmentCycle.objects.create(
+        name=f'Assessment {next_sequence}',
+        sequence=next_sequence,
+        is_current=True,
     )
+
+    messages.success(request, f'Started {new_cycle.name}. Historical assessment records were preserved.')
     return redirect('admin_portal_stages')
 
 

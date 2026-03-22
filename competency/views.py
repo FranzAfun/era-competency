@@ -9,11 +9,10 @@ from django.db.models import Avg
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from .models import Assessment, Executive, LoginOTP, Option, Question, Response, Stage
+from .models import Assessment, AssessmentCycle, Executive, LoginOTP, Option, Question, Response, Stage
 
 
 OTP_EXPIRY_MINUTES = 10
-TOTAL_STAGES = 4
 QUESTIONS_PER_STAGE = 25
 PASSING_SCORE_PERCENT = 70
 
@@ -24,6 +23,21 @@ def _get_active_stage_orders():
         .order_by('order')
         .values_list('order', flat=True)
     )
+
+
+def _get_current_cycle():
+    current_cycle = AssessmentCycle.objects.filter(is_current=True).order_by('-sequence').first()
+    if current_cycle:
+        return current_cycle
+
+    latest_cycle = AssessmentCycle.objects.order_by('-sequence').first()
+    next_sequence = latest_cycle.sequence + 1 if latest_cycle else 1
+    current_cycle = AssessmentCycle.objects.create(
+        name=f'Assessment {next_sequence}',
+        sequence=next_sequence,
+        is_current=True,
+    )
+    return current_cycle
 
 
 def _generate_otp_code():
@@ -60,12 +74,14 @@ def _get_logged_in_executive(request):
     return Executive.objects.filter(id=executive_id).first()
 
 
-def _get_next_stage_for_executive(executive, active_stage_orders=None):
+def _get_next_stage_for_executive(executive, active_stage_orders=None, cycle=None):
     if active_stage_orders is None:
         active_stage_orders = _get_active_stage_orders()
+    if cycle is None:
+        cycle = _get_current_cycle()
 
     passed_stages = set(
-        Assessment.objects.filter(executive=executive, passed=True).values_list('stage', flat=True)
+        Assessment.objects.filter(executive=executive, cycle=cycle, passed=True).values_list('stage', flat=True)
     )
 
     for stage_number in active_stage_orders:
@@ -82,7 +98,19 @@ def _get_stage_label(stage_number):
     return f"Stage {stage_number}"
 
 
-def _start_assessment_session(request, stage_number):
+def _get_saved_assessment_stage(request, current_cycle, next_stage):
+    if request.session.get('assessment_cycle_id') != current_cycle.id:
+        return None
+    if request.session.get('assessment_stage') != next_stage:
+        return None
+    if not request.session.get('assessment_question_ids'):
+        return None
+    if request.session.get('assessment_completed'):
+        return None
+    return next_stage
+
+
+def _start_assessment_session(request, stage_number, cycle):
     question_ids = list(
         Question.objects.filter(stage=stage_number)
         .order_by('order', 'id')
@@ -90,6 +118,7 @@ def _start_assessment_session(request, stage_number):
     )
     random.shuffle(question_ids)
 
+    request.session['assessment_cycle_id'] = cycle.id
     request.session['assessment_stage'] = stage_number
     request.session['assessment_question_ids'] = question_ids
     request.session['assessment_answers'] = []
@@ -103,6 +132,7 @@ def _start_assessment_session(request, stage_number):
 def _clear_assessment_session(request):
     for key in [
         'assessment_stage',
+        'assessment_cycle_id',
         'assessment_question_ids',
         'assessment_answers',
         'assessment_q_index',
@@ -125,8 +155,8 @@ def _notify_admins_about_completion(assessment, total_questions):
         return
 
     executive = assessment.executive
-    stage_label = assessment.stage_ref.name if assessment.stage_ref else f"Stage {assessment.stage}"
-    subject = "ERA AXIS Competency - Executive Completed All 4 Stages"
+    stage_label = assessment.stage_name or (assessment.stage_ref.name if assessment.stage_ref else f"Stage {assessment.stage}")
+    subject = "ERA AXIS Competency - Executive Completed All Available Stages"
     message = (
         f"An executive has completed all competency stages.\n\n"
         f"Executive: {executive.name}\n"
@@ -160,7 +190,7 @@ def _notify_admins_about_three_failed_attempts(assessment):
         return
 
     executive = assessment.executive
-    stage_label = assessment.stage_ref.name if assessment.stage_ref else f"Stage {assessment.stage}"
+    stage_label = assessment.stage_name or (assessment.stage_ref.name if assessment.stage_ref else f"Stage {assessment.stage}")
     subject = f"ERA AXIS Competency - 3 Failed Attempts ({stage_label})"
     message = (
         f"An executive has reached 3 failed attempts on the same stage.\n\n"
@@ -186,7 +216,7 @@ def _notify_executive_about_stage_pass(assessment, total_questions):
     if not executive.email:
         return
 
-    stage_label = assessment.stage_ref.name if assessment.stage_ref else f"Stage {assessment.stage}"
+    stage_label = assessment.stage_name or (assessment.stage_ref.name if assessment.stage_ref else f"Stage {assessment.stage}")
     subject = f"ERA AXIS Competency - You Passed {stage_label}"
     message = (
         f"Congratulations {executive.name},\n\n"
@@ -318,18 +348,21 @@ def dashboard(request):
     if not executive:
         return redirect('/')
 
-    assessments = Assessment.objects.filter(executive=executive).select_related('stage_ref').order_by('-created_at')
+    current_cycle = _get_current_cycle()
+    assessments = Assessment.objects.filter(executive=executive).select_related('stage_ref', 'cycle').order_by('-created_at')
+    current_cycle_assessments = assessments.filter(cycle=current_cycle)
     active_stage_orders = _get_active_stage_orders()
-    next_stage = _get_next_stage_for_executive(executive, active_stage_orders)
-    latest_assessment = assessments.first()
+    next_stage = _get_next_stage_for_executive(executive, active_stage_orders, current_cycle)
+    latest_assessment = current_cycle_assessments.first() or assessments.first()
 
-    total_attempts = assessments.count()
-    pass_count = assessments.filter(passed=True).count()
-    completed_stage_count = assessments.filter(passed=True).values_list('stage', flat=True).distinct().count()
-    overall_average_score = assessments.aggregate(avg=Avg('score'))['avg'] or 0
+    total_attempts = current_cycle_assessments.count()
+    pass_count = current_cycle_assessments.filter(passed=True).count()
+    completed_stage_count = current_cycle_assessments.filter(passed=True).values_list('stage', flat=True).distinct().count()
+    overall_average_score = current_cycle_assessments.aggregate(avg=Avg('score'))['avg'] or 0
     overall_pass_rate = (pass_count / total_attempts) * 100 if total_attempts else 0
     can_start_assessment = next_stage is not None
     is_completed = bool(active_stage_orders) and next_stage is None
+    saved_stage = _get_saved_assessment_stage(request, current_cycle, next_stage)
 
     user = request.session.get('user', {})
     user['name'] = executive.name
@@ -343,6 +376,7 @@ def dashboard(request):
         'next_stage_label': _get_stage_label(next_stage) if next_stage else None,
         'is_completed': is_completed,
         'can_start_assessment': can_start_assessment,
+        'has_saved_progress': saved_stage is not None,
         'has_active_stages': bool(active_stage_orders),
         'latest_assessment': latest_assessment,
         'overall_average_score': round(overall_average_score, 2),
@@ -350,6 +384,7 @@ def dashboard(request):
         'total_attempts': total_attempts,
         'completed_stage_count': completed_stage_count,
         'stage_count': len(active_stage_orders),
+        'current_cycle': current_cycle,
         'performance_history': assessments[:10],
     })
 
@@ -364,7 +399,8 @@ def start_assessment(request):
     if not executive:
         return redirect('login')
 
-    next_stage = _get_next_stage_for_executive(executive)
+    current_cycle = _get_current_cycle()
+    next_stage = _get_next_stage_for_executive(executive, cycle=current_cycle)
     if next_stage is None:
         return redirect('dashboard')
 
@@ -372,11 +408,12 @@ def start_assessment(request):
 
     should_reset = (
         request.GET.get('restart') == '1'
+        or request.session.get('assessment_cycle_id') != current_cycle.id
         or request.session.get('assessment_stage') != next_stage
         or not request.session.get('assessment_question_ids')
     )
     if should_reset:
-        _start_assessment_session(request, next_stage)
+        _start_assessment_session(request, next_stage, current_cycle)
 
     stage_number = request.session.get('assessment_stage', next_stage)
     question_ids = request.session.get('assessment_question_ids', [])
@@ -402,6 +439,11 @@ def start_assessment(request):
     if request.method == 'POST':
         action = request.POST.get('action', '')
         submitted_option_id = request.POST.get('option')
+
+        if action == 'save_exit':
+            request.session['assessment_feedback'] = None
+            request.session['assessment_selected_option_id'] = None
+            return redirect('dashboard')
 
         should_advance = action == 'next'
         # Some browsers/client scripts can submit without button name/value.
@@ -480,6 +522,7 @@ def result(request):
     executive = _get_logged_in_executive(request)
     if not executive:
         return redirect('login')
+    current_cycle = _get_current_cycle()
 
     if not request.session.get('assessment_completed') and not request.session.get('assessment_record_id'):
         return redirect('start_assessment')
@@ -495,8 +538,8 @@ def result(request):
                 'total': total_answered,
                 'passed': assessment.passed,
                 'stage_number': assessment.stage,
-                'stage_label': _get_stage_label(assessment.stage),
-                'next_stage': _get_next_stage_for_executive(executive),
+                'stage_label': assessment.stage_name or _get_stage_label(assessment.stage),
+                'next_stage': _get_next_stage_for_executive(executive, cycle=current_cycle),
             })
 
     stage_number = request.session.get('assessment_stage')
@@ -533,10 +576,13 @@ def result(request):
     passed = score >= PASSING_SCORE_PERCENT
 
     stage_ref = Stage.objects.filter(order=stage_number, is_active=True).first()
-    attempt_number = Assessment.objects.filter(executive=executive, stage=stage_number).count() + 1
+    stage_label = stage_ref.name if stage_ref else _get_stage_label(stage_number)
+    attempt_number = Assessment.objects.filter(executive=executive, cycle=current_cycle, stage=stage_number).count() + 1
     assessment = Assessment.objects.create(
         executive=executive,
+        cycle=current_cycle,
         stage=stage_number,
+        stage_name=stage_label,
         stage_ref=stage_ref,
         attempt_number=attempt_number,
         correct_answers=correct_count,
@@ -555,7 +601,8 @@ def result(request):
         for item in responses_to_create
     ])
 
-    if assessment.stage == TOTAL_STAGES:
+    active_stage_orders = _get_active_stage_orders()
+    if active_stage_orders and assessment.stage == active_stage_orders[-1]:
         _notify_admins_about_completion(assessment, total)
 
     if assessment.passed:
@@ -578,6 +625,6 @@ def result(request):
         'total': total,
         'passed': assessment.passed,
         'stage_number': assessment.stage,
-        'stage_label': _get_stage_label(assessment.stage),
-        'next_stage': _get_next_stage_for_executive(executive),
+        'stage_label': assessment.stage_name or _get_stage_label(assessment.stage),
+        'next_stage': _get_next_stage_for_executive(executive, cycle=current_cycle),
     })
