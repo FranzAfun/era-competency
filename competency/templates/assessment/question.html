@@ -45,7 +45,7 @@
                                 value="{{ option.id }}"
                                 class="mt-1 h-4 w-4 shrink-0 accent-brand-primary"
                                 {% if selected_option_id == option.id %}checked{% endif %}
-                                {% if not feedback %}{% if forloop.first %}required{% endif %}{% else %}disabled{% endif %}
+                                {% if feedback %}disabled{% endif %}
                             >
                             <div class="space-y-1">
                                 <span class="block text-xs font-semibold uppercase tracking-[0.18em] {% if selected_option_id == option.id %}text-indigo-200{% else %}text-slate-400 group-hover:text-indigo-200{% endif %}">

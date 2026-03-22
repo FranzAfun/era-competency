@@ -110,13 +110,13 @@
                                     </button>
                                     <button
                                         type="button"
-                                        class="delete-stage-trigger inline-flex items-center justify-center rounded-brand-input border border-red-400/40 px-3 py-2 text-xs font-semibold uppercase text-red-200 transition-colors hover:bg-red-500/10 {% if stage.assessment_count %}cursor-not-allowed opacity-50{% endif %}"
+                                        class="delete-stage-trigger inline-flex items-center justify-center rounded-brand-input border border-red-400/40 px-3 py-2 text-xs font-semibold uppercase text-red-200 transition-colors hover:bg-red-500/10 {% if stage.assessment_count or stage.question_count %}cursor-not-allowed opacity-50{% endif %}"
                                         data-stage-id="{{ stage.id }}"
                                         data-stage-label="{{ stage.name|escapejs }}"
                                         data-stage-order="{{ stage.order }}"
                                         data-stage-question-count="{{ stage.question_count }}"
                                         data-stage-assessment-count="{{ stage.assessment_count }}"
-                                        {% if stage.assessment_count %}disabled{% endif %}
+                                        {% if stage.assessment_count or stage.question_count %}disabled{% endif %}
                                     >
                                         Delete Stage
                                     </button>
@@ -323,14 +323,15 @@
         deleteStageTriggers.forEach((trigger) => {
             trigger.addEventListener('click', function () {
                 const assessmentCount = Number(trigger.getAttribute('data-stage-assessment-count') || '0');
-                if (assessmentCount) {
+                const questionCount = Number(trigger.getAttribute('data-stage-question-count') || '0');
+                if (assessmentCount || questionCount) {
                     return;
                 }
 
                 openDeleteStageModal({
                     stageLabel: trigger.getAttribute('data-stage-label') || 'selected stage',
                     stageOrder: trigger.getAttribute('data-stage-order') || '',
-                    questionCount: Number(trigger.getAttribute('data-stage-question-count') || '0'),
+                    questionCount: questionCount,
                     action: "{% url 'admin_portal_stages' %}" + (trigger.getAttribute('data-stage-id') || '') + "/delete/",
                 });
             });

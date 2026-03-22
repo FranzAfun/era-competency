@@ -210,6 +210,13 @@ def admin_delete_stage_view(request, stage_id):
         return redirect('admin_portal_stages')
 
     stage = get_object_or_404(Stage, id=stage_id)
+    if stage.questions.exists():
+        messages.error(
+            request,
+            f'{stage} still has questions. Clear its questions first before deleting the stage.',
+        )
+        return redirect('admin_portal_stages')
+
     if stage.assessments.exists():
         messages.error(
             request,
@@ -217,17 +224,9 @@ def admin_delete_stage_view(request, stage_id):
         )
         return redirect('admin_portal_stages')
 
-    question_count = stage.questions.count()
     stage_label = str(stage)
-    if question_count:
-        stage.questions.all().delete()
-
     stage.delete()
-
-    if question_count:
-        messages.success(request, f'Deleted {stage_label} and its {question_count} question(s).')
-    else:
-        messages.success(request, f'Deleted {stage_label}.')
+    messages.success(request, f'Deleted {stage_label}.')
 
     return redirect('admin_portal_stages')
 

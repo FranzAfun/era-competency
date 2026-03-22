@@ -399,11 +399,20 @@ class AdminStageManagementTests(TestCase):
 		self.assertContains(response, 'does not have any questions to clear')
 
 	def test_admin_can_delete_stage_without_assessment_history(self):
+		Question.objects.filter(stage_ref=self.stage).delete()
+
 		response = self.client.post(reverse('admin_portal_delete_stage', args=[self.stage.id]))
 
 		self.assertEqual(response.status_code, 302)
 		self.assertFalse(Stage.objects.filter(id=self.stage.id).exists())
 		self.assertEqual(Question.objects.filter(stage_ref=self.stage).count(), 0)
+
+	def test_stage_delete_is_blocked_when_questions_still_exist(self):
+		response = self.client.post(reverse('admin_portal_delete_stage', args=[self.stage.id]), follow=True)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertTrue(Stage.objects.filter(id=self.stage.id).exists())
+		self.assertContains(response, 'still has questions')
 
 	def test_stage_delete_is_blocked_when_assessments_exist(self):
 		executive = Executive.objects.create(
@@ -424,6 +433,7 @@ class AdminStageManagementTests(TestCase):
 			score=100,
 			passed=True,
 		)
+		Question.objects.filter(stage_ref=self.stage).delete()
 
 		response = self.client.post(reverse('admin_portal_delete_stage', args=[self.stage.id]), follow=True)
 
