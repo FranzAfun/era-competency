@@ -6,29 +6,29 @@
 <div class="w-full max-w-6xl mx-auto space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-            <h1 class="text-white text-3xl font-semibold">Competency Admin Dashboard</h1>
+            <h1 class="text-brand-text text-3xl font-semibold">Competency Admin Dashboard</h1>
             <p class="text-sm text-brand-text-muted mt-2">Current cycle: {{ current_cycle.name }}</p>
         </div>
         <div class="flex flex-wrap gap-2">
-            <a href="{% url 'admin_portal_stages' %}" class="inline-flex items-center justify-center text-sm font-medium text-white bg-brand-primary px-4 py-2 rounded-brand-input hover:bg-brand-primary-hover transition-colors">Manage Stages</a>
-            <a href="{% url 'admin_portal_questions' %}" class="inline-flex items-center justify-center text-sm font-medium text-brand-text-muted border border-brand-border px-4 py-2 rounded-brand-input hover:text-white hover:border-brand-text-muted transition-colors">Manage Questions</a>
-            <a href="{% url 'admin_portal_logout' %}" class="inline-flex items-center justify-center text-sm font-medium text-brand-error border border-brand-error/50 px-4 py-2 rounded-brand-input hover:bg-brand-error/10 transition-colors">Logout</a>
+            <a href="{% url 'admin_portal_stages' %}" class="brand-primary-button rounded-brand-input px-4 py-2 text-sm font-medium">Manage Stages</a>
+            <a href="{% url 'admin_portal_questions' %}" class="brand-secondary-button rounded-brand-input px-4 py-2 text-sm font-medium">Manage Questions</a>
+            <a href="{% url 'admin_portal_logout' %}" class="brand-danger-outline-button rounded-brand-input px-4 py-2 text-sm font-medium">Logout</a>
         </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <div class="bg-brand-card rounded-brand p-5 border border-brand-border"><p class="text-brand-text-muted text-sm">Executives</p><p class="text-white text-2xl font-semibold mt-2">{{ total_executives }}</p></div>
-        <div class="bg-brand-card rounded-brand p-5 border border-brand-border"><p class="text-brand-text-muted text-sm">Questions</p><p class="text-white text-2xl font-semibold mt-2">{{ total_questions }}</p></div>
-        <div class="bg-brand-card rounded-brand p-5 border border-brand-border"><p class="text-brand-text-muted text-sm">Assessments</p><p class="text-white text-2xl font-semibold mt-2">{{ total_assessments }}</p></div>
-        <div class="bg-brand-card rounded-brand p-5 border border-brand-border"><p class="text-brand-text-muted text-sm">Overall Pass Rate</p><p class="text-white text-2xl font-semibold mt-2">{{ overall_pass_rate }}%</p></div>
+        <div class="brand-stat-card p-5"><p class="text-brand-text-muted text-sm">Executives</p><p class="text-brand-text text-2xl font-semibold mt-2">{{ total_executives }}</p></div>
+        <div class="brand-stat-card p-5"><p class="text-brand-text-muted text-sm">Questions</p><p class="text-brand-text text-2xl font-semibold mt-2">{{ total_questions }}</p></div>
+        <div class="brand-stat-card p-5"><p class="text-brand-text-muted text-sm">Assessments</p><p class="text-brand-text text-2xl font-semibold mt-2">{{ total_assessments }}</p></div>
+        <div class="brand-stat-card p-5"><p class="text-brand-text-muted text-sm">Overall Pass Rate</p><p class="text-brand-text text-2xl font-semibold mt-2">{{ overall_pass_rate }}%</p></div>
     </div>
 
-    <div class="bg-brand-card rounded-brand p-6 border border-brand-border">
-        <h2 class="text-white text-xl font-semibold mb-4">Stage Performance</h2>
+    <div class="brand-panel p-6">
+        <h2 class="text-brand-text text-xl font-semibold mb-4">Stage Performance</h2>
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead>
-                    <tr class="text-brand-text-muted border-b border-brand-border">
+                    <tr class="brand-table-head">
                         <th class="text-left py-2 pr-4">Stage</th>
                         <th class="text-left py-2 pr-4">Questions</th>
                         <th class="text-left py-2 pr-4">Attempts</th>
@@ -38,8 +38,8 @@
                 </thead>
                 <tbody>
                     {% for row in stage_stats %}
-                        <tr class="border-b border-brand-border/50 text-brand-text-muted">
-                            <td class="py-3 pr-4 text-white">{{ row.stage.name }}</td>
+                        <tr class="brand-table-row">
+                            <td class="py-3 pr-4 text-brand-text">{{ row.stage.name }}</td>
                             <td class="py-3 pr-4">{{ row.question_count }}/25</td>
                             <td class="py-3 pr-4">{{ row.total_attempts }}</td>
                             <td class="py-3 pr-4">{{ row.pass_rate }}%</td>
@@ -55,12 +55,12 @@
         </div>
     </div>
 
-    <div class="bg-brand-card rounded-brand p-6 border border-brand-border">
-        <h2 class="text-white text-xl font-semibold mb-4">Flagged Difficult Questions</h2>
+    <div class="brand-panel p-6">
+        <h2 class="text-brand-text text-xl font-semibold mb-4">Flagged Difficult Questions</h2>
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm mb-2">
                 <thead>
-                    <tr class="text-brand-text-muted border-b border-brand-border">
+                    <tr class="brand-table-head">
                         <th class="text-left py-2 pr-4">Stage</th>
                         <th class="text-left py-2 pr-4">Order</th>
                         <th class="text-left py-2 pr-4">Wrong Rate</th>
@@ -69,7 +69,7 @@
                 </thead>
                 <tbody>
                     {% for question in difficult_questions %}
-                        <tr class="border-b border-brand-border/50 text-brand-text-muted">
+                        <tr class="brand-table-row">
                             <td class="py-3 pr-4">{{ question.stage_ref.name|default:question.stage }}</td>
                             <td class="py-3 pr-4">{{ question.order }}</td>
                             <td class="py-3 pr-4 text-brand-error">{{ question.wrong_rate|floatformat:2 }}%</td>
@@ -85,12 +85,12 @@
         </div>
     </div>
 
-    <div class="bg-brand-card rounded-brand p-6 border border-brand-border">
-        <h2 class="text-white text-xl font-semibold mb-4">Recent Assessments</h2>
+    <div class="brand-panel p-6">
+        <h2 class="text-brand-text text-xl font-semibold mb-4">Recent Assessments</h2>
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead>
-                    <tr class="text-brand-text-muted border-b border-brand-border">
+                    <tr class="brand-table-head">
                         <th class="text-left py-2 pr-4">Cycle</th>
                         <th class="text-left py-2 pr-4">Executive</th>
                         <th class="text-left py-2 pr-4">Stage</th>
@@ -101,9 +101,9 @@
                 </thead>
                 <tbody>
                     {% for item in recent_assessments %}
-                        <tr class="border-b border-brand-border/50 text-brand-text-muted">
+                        <tr class="brand-table-row">
                             <td class="py-3 pr-4">{{ item.cycle.name|default:"Assessment 1" }}</td>
-                            <td class="py-3 pr-4 text-white">{{ item.executive.name }}</td>
+                            <td class="py-3 pr-4 text-brand-text">{{ item.executive.name }}</td>
                             <td class="py-3 pr-4">
                                 {% if item.stage_name %}
                                     {{ item.stage_name }}
@@ -117,7 +117,7 @@
                             <td class="py-3 pr-4">{{ item.score }}%</td>
                             <td class="py-3">
                                 {% if item.passed %}
-                                    <span class="text-emerald-300">Passed</span>
+                                    <span class="text-brand-success">Passed</span>
                                 {% else %}
                                     <span class="text-brand-error">Failed</span>
                                 {% endif %}

@@ -5,14 +5,14 @@
 {% block content %}
 <div class="w-full max-w-md mx-auto">
     <div class="text-center mb-8">
-        <h2 class="text-white text-lg font-bold tracking-widest uppercase mb-4">ERA AXIS</h2>
-        <h1 class="text-white text-2xl font-semibold mb-2">Verify your login</h1>
-        <p class="text-brand-text-muted text-sm">We sent a one-time password to <span class="text-white">{{ email }}</span></p>
+        <h2 class="text-brand-text text-lg font-bold tracking-widest uppercase mb-4">ERA AXIS</h2>
+        <h1 class="text-brand-text text-2xl font-semibold mb-2">Verify your login</h1>
+        <p class="text-brand-text-muted text-sm">We sent a one-time password to <span class="text-brand-text">{{ email }}</span></p>
     </div>
 
-    <div class="bg-brand-card rounded-brand p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
+    <div class="brand-panel p-6">
         {% if info_message %}
-            <p class="mb-4 text-sm text-emerald-300">{{ info_message }}</p>
+            <p class="mb-4 text-sm text-brand-success">{{ info_message }}</p>
         {% endif %}
 
         <form method="POST" action="{% url 'verify_otp' %}" class="space-y-5">
@@ -26,7 +26,7 @@
                        name="otp"
                        id="id_otp"
                        required
-                       class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white placeholder-brand-text-muted/50 focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none"
+                       class="brand-input w-full rounded-brand-input px-4 py-3"
                        placeholder="Enter 6-digit code">
 
                 {% if errors.otp %}
@@ -35,7 +35,7 @@
             </div>
 
             <button type="submit"
-                    class="w-full bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 hover:shadow-lg text-white font-bold py-4 px-6 rounded-brand-input transition-all duration-200 uppercase flex items-center justify-center gap-2">
+                    class="brand-primary-button w-full rounded-brand-input px-6 py-4 font-bold uppercase">
                 VERIFY OTP →
             </button>
         </form>
@@ -43,7 +43,7 @@
         <form method="POST" action="{% url 'resend_otp' %}" class="mt-4">
             {% csrf_token %}
             <button type="submit"
-                    class="w-full inline-flex items-center justify-center text-sm font-medium text-brand-text-muted border border-brand-border rounded-brand-input px-4 py-3 hover:text-white hover:border-brand-text-muted transition-colors uppercase">
+                    class="brand-secondary-button w-full rounded-brand-input px-4 py-3 text-sm font-medium uppercase">
                 Resend OTP
             </button>
         </form>

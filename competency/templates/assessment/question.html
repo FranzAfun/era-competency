@@ -4,17 +4,17 @@
 
 {% block content %}
 <div class="w-full max-w-2xl mx-auto">
-    <div class="bg-brand-card rounded-brand px-4 py-5 sm:p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
+    <div class="brand-panel px-4 py-5 sm:p-6">
         <p class="text-brand-text-muted text-sm mb-3 tracking-[0.01em]">{{ stage_label }} · Question {{ question_number }} of {{ total_questions }}</p>
 
         {% if assessment_unavailable %}
             <p class="text-brand-error text-sm">{{ error }}</p>
-            <a href="{% url 'dashboard' %}" class="inline-flex mt-6 items-center justify-center bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-3 px-6 rounded-brand-input transition-all duration-200 uppercase">
+            <a href="{% url 'dashboard' %}" class="brand-primary-button mt-6 rounded-brand-input px-6 py-3 font-bold uppercase">
                 Back to Dashboard
             </a>
         {% else %}
             <div class="mb-5 sm:mb-6 border-l-2 border-brand-primary/70 pl-3 sm:pl-4">
-                <h2 class="max-w-[34rem] text-slate-50 text-[1.45rem] sm:text-[1.82rem] leading-[1.42] sm:leading-[1.38] font-medium tracking-[-0.015em] text-balance">{{ question.text }}</h2>
+                <h2 class="max-w-[34rem] text-brand-text text-[1.45rem] sm:text-[1.82rem] leading-[1.42] sm:leading-[1.38] font-medium tracking-[-0.015em] text-balance">{{ question.text }}</h2>
             </div>
 
             <form method="POST" class="space-y-5">
@@ -26,11 +26,11 @@
 
                 {% if feedback %}
                     {% if feedback.is_correct %}
-                        <div class="border border-emerald-500/40 bg-emerald-500/10 rounded-brand-input px-4 py-3 text-emerald-300 text-sm">
+                        <div class="brand-callout-success px-4 py-3 text-sm">
                             {{ feedback.message }}
                         </div>
                     {% else %}
-                        <div class="border border-brand-error/50 bg-brand-error/10 rounded-brand-input px-4 py-3 text-brand-error text-sm">
+                        <div class="brand-callout-danger px-4 py-3 text-sm">
                             {{ feedback.message }}
                         </div>
                     {% endif %}
@@ -38,7 +38,7 @@
 
                 <div class="space-y-3">
                     {% for option in question.options.all %}
-                        <label class="group flex items-start gap-3 sm:gap-4 rounded-brand-input border px-3 py-3 sm:px-4 transition-all duration-200 {% if selected_option_id == option.id %}border-brand-primary bg-brand-primary/15 text-white shadow-[0_6px_18px_rgba(57,54,111,0.18)]{% else %}border-brand-border bg-brand-bg/30 text-brand-text-muted hover:border-brand-primary/45 hover:bg-brand-bg/50 hover:text-slate-200{% endif %} {% if feedback %}cursor-default{% else %}cursor-pointer{% endif %}">
+                        <label class="group flex items-start gap-3 sm:gap-4 rounded-brand-input border px-3 py-3 sm:px-4 transition-all duration-200 {% if selected_option_id == option.id %}border-brand-primary bg-brand-primary/10 text-brand-text shadow-[0_10px_24px_rgba(57,54,111,0.12)]{% else %}border-brand-border bg-brand-bg/55 text-brand-text-muted hover:border-brand-primary/40 hover:bg-brand-card/90 hover:text-brand-text{% endif %} {% if feedback %}cursor-default{% else %}cursor-pointer{% endif %}">
                             <input
                                 type="radio"
                                 name="option"
@@ -48,7 +48,7 @@
                                 {% if feedback %}disabled{% endif %}
                             >
                             <div class="space-y-1">
-                                <span class="block text-xs font-semibold uppercase tracking-[0.18em] {% if selected_option_id == option.id %}text-indigo-200{% else %}text-slate-400 group-hover:text-indigo-200{% endif %}">
+                                <span class="block text-xs font-semibold uppercase tracking-[0.18em] {% if selected_option_id == option.id %}text-brand-primary{% else %}text-brand-text-muted group-hover:text-brand-primary{% endif %}">
                                     Option {{ forloop.counter }}
                                 </span>
                                 <span class="block max-w-[32rem] text-[0.97rem] sm:text-[1.05rem] leading-7 sm:leading-8">{{ option.text }}</span>
@@ -58,22 +58,22 @@
                 </div>
 
                 {% if feedback and feedback.explanation %}
-                    <div class="border border-brand-border bg-brand-bg/40 rounded-brand-input px-3 py-4 sm:px-4 text-slate-300 text-[0.95rem] sm:text-[0.98rem] leading-7">
-                        <span class="font-semibold text-white">Explanation:</span> {{ feedback.explanation }}
+                    <div class="rounded-brand-input border border-brand-border bg-brand-bg/70 px-3 py-4 text-[0.95rem] leading-7 text-brand-text-muted sm:px-4 sm:text-[0.98rem]">
+                        <span class="font-semibold text-brand-text">Explanation:</span> {{ feedback.explanation }}
                     </div>
                 {% endif %}
 
                 <div class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <button type="button" id="open-save-exit-modal" class="w-full sm:w-auto border border-brand-border hover:border-brand-text-muted text-brand-text-muted hover:text-white font-semibold py-3 px-5 rounded-brand-input transition-colors">
+                    <button type="button" id="open-save-exit-modal" class="brand-secondary-button w-full rounded-brand-input px-5 py-3 font-semibold sm:w-auto">
                         Save and Exit
                     </button>
 
                     {% if feedback %}
-                        <button type="submit" name="action" value="next" class="w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-3 px-6 rounded-brand-input transition-all duration-200 uppercase">
+                        <button type="submit" name="action" value="next" class="brand-primary-button w-full rounded-brand-input px-6 py-3 font-bold uppercase sm:w-auto">
                             {% if is_last_question %}Finish Stage{% else %}Next Question{% endif %}
                         </button>
                     {% else %}
-                        <button type="submit" name="action" value="submit" class="w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-3 px-6 rounded-brand-input transition-all duration-200 uppercase">
+                        <button type="submit" name="action" value="submit" class="brand-primary-button w-full rounded-brand-input px-6 py-3 font-bold uppercase sm:w-auto">
                             Submit Answer
                         </button>
                     {% endif %}
@@ -84,15 +84,15 @@
 </div>
 
 {% if not assessment_unavailable %}
-<div id="save-exit-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-[1px] px-4">
-    <div class="w-full max-w-md rounded-brand border border-brand-border bg-brand-card p-6 shadow-2xl">
-        <h3 class="text-xl font-semibold text-white">Save and Exit Assessment</h3>
+<div id="save-exit-modal" class="brand-modal-overlay">
+    <div class="brand-modal-panel">
+        <h3 class="text-xl font-semibold text-brand-text">Save and Exit Assessment</h3>
         <p class="mt-3 text-sm text-brand-text-muted">Your progress for this stage will be saved so you can continue later from the dashboard. Exit now?</p>
         <div class="mt-6 flex flex-wrap justify-end gap-3">
-            <button type="button" id="save-exit-cancel" class="border border-brand-border hover:border-brand-text-muted text-brand-text-muted hover:text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Cancel</button>
+            <button type="button" id="save-exit-cancel" class="brand-secondary-button rounded-brand-input px-4 py-2 font-semibold">Cancel</button>
             <form method="POST">
                 {% csrf_token %}
-                <button type="submit" name="action" value="save_exit" class="bg-brand-primary hover:bg-brand-primary-hover text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Save and Exit</button>
+                <button type="submit" name="action" value="save_exit" class="brand-primary-button rounded-brand-input px-4 py-2 font-semibold">Save and Exit</button>
             </form>
         </div>
     </div>

@@ -6,15 +6,15 @@
 <div class="w-full max-w-md mx-auto">
     <!-- Top Section -->
     <div class="text-center mb-8">
-        <h2 class="text-white text-lg font-bold tracking-widest uppercase mb-4">ERA AXIS</h2>
-        <h1 class="text-white text-2xl font-semibold mb-4">Executive Certification Programme</h1>
+        <h2 class="text-brand-text text-lg font-bold tracking-widest uppercase mb-4">ERA AXIS</h2>
+        <h1 class="text-brand-text text-2xl font-semibold mb-4">Executive Certification Programme</h1>
         <!-- <p class="text-brand-text-muted text-sm leading-relaxed">
             4 sequential stages · 25 questions each · Pass 70% to advance
         </p> -->
     </div>
 
     <!-- Form Card -->
-    <div class="bg-brand-card rounded-brand p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
+    <div class="brand-panel p-6">
         <form method="POST" action="{% url 'login_post' %}" class="space-y-6">
             {% csrf_token %}
 
@@ -29,7 +29,7 @@
                        name="email"
                        id="id_email"
                        required
-                       class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white placeholder-brand-text-muted/50 focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none"
+                       class="brand-input w-full rounded-brand-input px-4 py-3"
                        placeholder="you@company.com"
                        value="{{ request.POST.email|default:'' }}">
                 {% if errors.email %}
@@ -43,7 +43,7 @@
                 <input type="text" 
                        name="name" 
                        id="id_name" 
-                       class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white placeholder-brand-text-muted/50 focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none"
+                       class="brand-input w-full rounded-brand-input px-4 py-3"
                        placeholder="Enter your full name (first-time only)"
                        value="{{ request.POST.name|default:'' }}">
                 {% if errors.name %}
@@ -56,7 +56,7 @@
                 <label for="id_role" class="block text-sm font-medium text-brand-text-muted">Role</label>
                 <select name="role" 
                         id="id_role" 
-                        class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none appearance-none cursor-pointer">
+                        class="brand-select w-full rounded-brand-input px-4 py-3">
                     <option value="" {% if not request.POST.role %}selected{% endif %}>Select your role (first-time only)</option>
                     <option value="executive" {% if request.POST.role == 'executive' %}selected{% endif %}>Executive</option>
                     <option value="manager" {% if request.POST.role == 'manager' %}selected{% endif %}>Manager</option>
@@ -71,7 +71,7 @@
 
             <!-- Primary Button -->
             <button type="submit" 
-                    class="w-full bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 hover:shadow-lg text-white font-bold py-4 px-6 rounded-brand-input transition-all duration-200 uppercase flex items-center justify-center gap-2 mt-6">
+                    class="brand-primary-button mt-6 w-full rounded-brand-input px-6 py-4 font-bold uppercase">
                 CONTINUE →
             </button>
         </form>

@@ -4,22 +4,22 @@
 
 {% block content %}
 <div class="w-full max-w-xl mx-auto">
-    <div class="bg-brand-card rounded-brand p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
-        <h1 class="text-white text-3xl font-semibold mb-6">Result</h1>
+    <div class="brand-panel p-6">
+        <h1 class="text-brand-text text-3xl font-semibold mb-6">Result</h1>
 
-        <p class="text-brand-text-muted mb-3">Stage: <span class="text-white">{{ stage_label }}</span></p>
+        <p class="text-brand-text-muted mb-3">Stage: <span class="text-brand-text">{{ stage_label }}</span></p>
 
-        <p class="text-brand-text-muted mb-3">Score: <span class="text-white">{{ score }}%</span></p>
-        <p class="text-brand-text-muted mb-3">Correct: <span class="text-white">{{ correct }}</span></p>
-        <p class="text-brand-text-muted mb-4">Total: <span class="text-white">{{ total }}</span></p>
+        <p class="text-brand-text-muted mb-3">Score: <span class="text-brand-text">{{ score }}%</span></p>
+        <p class="text-brand-text-muted mb-3">Correct: <span class="text-brand-text">{{ correct }}</span></p>
+        <p class="text-brand-text-muted mb-4">Total: <span class="text-brand-text">{{ total }}</span></p>
 
         {% if passed %}
-            <p class="text-emerald-300 mb-4">Passed. You can proceed to the next stage.</p>
+            <p class="text-brand-success mb-4">Passed. You can proceed to the next stage.</p>
         {% else %}
             <p class="text-brand-error mb-4">Not passed. You can retry this stage.</p>
         {% endif %}
 
-        <a href="{% url 'dashboard' %}" class="inline-flex w-full sm:w-auto items-center justify-center bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-3 px-6 rounded-brand-input transition-all duration-200 uppercase">
+        <a href="{% url 'dashboard' %}" class="brand-primary-button w-full rounded-brand-input px-6 py-3 font-bold uppercase sm:w-auto">
             Back to Dashboard
         </a>
     </div>

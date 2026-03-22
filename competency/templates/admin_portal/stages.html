@@ -5,24 +5,24 @@
 {% block content %}
 <div class="w-full max-w-5xl mx-auto space-y-6">
     <div class="flex items-center justify-between">
-        <h1 class="text-white text-3xl font-semibold">Manage Stages</h1>
+        <h1 class="text-brand-text text-3xl font-semibold">Manage Stages</h1>
         <div class="flex flex-wrap items-center gap-2">
-            <a href="{% url 'admin_portal_questions' %}" class="inline-flex items-center justify-center text-sm font-medium text-white bg-brand-primary px-4 py-2 rounded-brand-input hover:bg-brand-primary-hover transition-colors">Manage Questions</a>
-            <a href="{% url 'admin_portal_dashboard' %}" class="inline-flex items-center justify-center text-sm font-medium text-brand-text-muted border border-brand-border px-4 py-2 rounded-brand-input hover:text-white hover:border-brand-text-muted transition-colors">Back to Dashboard</a>
+            <a href="{% url 'admin_portal_questions' %}" class="brand-primary-button rounded-brand-input px-4 py-2 text-sm font-medium">Manage Questions</a>
+            <a href="{% url 'admin_portal_dashboard' %}" class="brand-secondary-button rounded-brand-input px-4 py-2 text-sm font-medium">Back to Dashboard</a>
         </div>
     </div>
 
-    <div class="bg-brand-card rounded-brand p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
-        <div class="mb-6 rounded-brand border border-red-400/40 bg-red-500/10 p-4">
-            <h2 class="text-white text-lg font-semibold">Start New Cycle</h2>
-            <p class="text-red-200 text-sm mt-2">This starts a new assessment cycle from the first active stage while preserving all previous cycle records. Use this only when starting a fresh assessment round.</p>
-            <button type="button" id="open-reset-cycle-modal" class="mt-4 bg-red-500 hover:bg-red-400 hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-2 px-4 rounded-brand-input transition-all uppercase text-sm">Start New Cycle</button>
+    <div class="brand-panel p-6">
+        <div class="brand-callout-danger mb-6 p-4">
+            <h2 class="text-brand-text text-lg font-semibold">Start New Cycle</h2>
+            <p class="text-brand-text-muted text-sm mt-2">This starts a new assessment cycle from the first active stage while preserving all previous cycle records. Use this only when starting a fresh assessment round.</p>
+            <button type="button" id="open-reset-cycle-modal" class="brand-danger-button mt-4 rounded-brand-input px-4 py-2 text-sm font-bold uppercase">Start New Cycle</button>
         </div>
 
         {% if messages %}
             <div class="space-y-2 mb-4">
                 {% for message in messages %}
-                    <p class="text-sm {% if message.tags == 'error' %}text-brand-error{% else %}text-emerald-300{% endif %}">{{ message }}</p>
+                    <p class="text-sm {% if message.tags == 'error' %}text-brand-error{% else %}text-brand-success{% endif %}">{{ message }}</p>
                 {% endfor %}
             </div>
         {% endif %}
@@ -33,35 +33,35 @@
 
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-brand-text-muted mb-2">Stage Name</label>
-                <input type="text" id="stage-name-input" name="name" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none" placeholder="Leadership Fundamentals">
+                <input type="text" id="stage-name-input" name="name" required class="brand-input w-full rounded-brand-input px-4 py-3" placeholder="Leadership Fundamentals">
             </div>
             <div>
                 <label class="block text-sm font-medium text-brand-text-muted mb-2">Order (1-4)</label>
-                <input type="number" id="stage-order-input" name="order" min="1" max="4" required class="w-full bg-brand-bg border border-brand-border rounded-brand-input px-4 py-3 text-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all outline-none">
+                <input type="number" id="stage-order-input" name="order" min="1" max="4" required class="brand-input w-full rounded-brand-input px-4 py-3">
             </div>
             <div>
                 <label class="inline-flex items-center gap-2 text-brand-text-muted text-sm mb-3">
                     <input type="checkbox" id="stage-is-active-input" name="is_active" checked class="accent-brand-primary"> Active
                 </label>
-                <button type="submit" id="save-stage-button" class="w-full bg-brand-primary hover:bg-brand-primary-hover text-white font-bold py-3 px-4 rounded-brand-input transition-all uppercase">Save Stage</button>
+                <button type="submit" id="save-stage-button" class="brand-primary-button w-full rounded-brand-input px-4 py-3 font-bold uppercase">Save Stage</button>
             </div>
         </form>
 
-        <div id="edit-stage-info" class="hidden mt-4 rounded-brand-input border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-sm text-amber-200"></div>
+        <div id="edit-stage-info" class="brand-callout-warning hidden mt-4 px-4 py-3 text-sm"></div>
 
         <div class="mt-4 flex flex-wrap gap-3">
-            <button type="button" id="cancel-stage-edit-button" class="hidden border border-brand-border hover:border-brand-text-muted text-brand-text-muted hover:text-white font-bold py-3 px-6 rounded-brand-input transition-all uppercase">Cancel Update</button>
+            <button type="button" id="cancel-stage-edit-button" class="brand-secondary-button hidden rounded-brand-input px-6 py-3 font-bold uppercase">Cancel Update</button>
         </div>
 
         <p class="mt-4 text-brand-text-muted text-sm">Need to rebuild a full stage? Use Clear Questions on a stage below to empty only that stage's question bank without changing the stage order.</p>
     </div>
 
-    <div class="bg-brand-card rounded-brand p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
-        <h2 class="text-white text-xl font-semibold mb-4">Configured Stages</h2>
+    <div class="brand-panel p-6">
+        <h2 class="text-brand-text text-xl font-semibold mb-4">Configured Stages</h2>
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead>
-                    <tr class="text-brand-text-muted border-b border-brand-border">
+                    <tr class="brand-table-head">
                         <th class="text-left py-2 pr-4">Order</th>
                         <th class="text-left py-2 pr-4">Name</th>
                         <th class="text-left py-2 pr-4">Status</th>
@@ -72,12 +72,12 @@
                 </thead>
                 <tbody>
                     {% for stage in stages %}
-                        <tr class="border-b border-brand-border/50 text-brand-text-muted">
-                            <td class="py-3 pr-4 text-white">{{ stage.order }}</td>
+                        <tr class="brand-table-row">
+                            <td class="py-3 pr-4 text-brand-text">{{ stage.order }}</td>
                             <td class="py-3 pr-4">{{ stage.name }}</td>
                             <td class="py-3 pr-4">
                                 {% if stage.is_active %}
-                                    <span class="text-emerald-300">Active</span>
+                                    <span class="text-brand-success">Active</span>
                                 {% else %}
                                     <span class="text-brand-error">Inactive</span>
                                 {% endif %}
@@ -88,7 +88,7 @@
                                 <div class="flex flex-wrap gap-2">
                                     <button
                                         type="button"
-                                        class="stage-edit-trigger inline-flex items-center justify-center rounded-brand-input border border-brand-border px-3 py-2 text-xs font-semibold uppercase text-brand-text-muted transition-colors hover:border-brand-text-muted hover:text-white"
+                                        class="stage-edit-trigger brand-secondary-button rounded-brand-input px-3 py-2 text-xs font-semibold uppercase"
                                         data-stage-id="{{ stage.id }}"
                                         data-stage-name="{{ stage.name|escapejs }}"
                                         data-stage-order="{{ stage.order }}"
@@ -99,7 +99,7 @@
                                     </button>
                                     <button
                                         type="button"
-                                        class="clear-stage-trigger inline-flex items-center justify-center rounded-brand-input border border-red-400/40 px-3 py-2 text-xs font-semibold uppercase text-red-200 transition-colors hover:bg-red-500/10 {% if not stage.question_count %}cursor-not-allowed opacity-50{% endif %}"
+                                        class="clear-stage-trigger brand-danger-outline-button rounded-brand-input px-3 py-2 text-xs font-semibold uppercase {% if not stage.question_count %}cursor-not-allowed opacity-50{% endif %}"
                                         data-stage-id="{{ stage.id }}"
                                         data-stage-label="{{ stage.name|escapejs }}"
                                         data-stage-order="{{ stage.order }}"
@@ -110,7 +110,7 @@
                                     </button>
                                     <button
                                         type="button"
-                                        class="delete-stage-trigger inline-flex items-center justify-center rounded-brand-input border border-red-400/40 px-3 py-2 text-xs font-semibold uppercase text-red-200 transition-colors hover:bg-red-500/10 {% if stage.assessment_count or stage.question_count %}cursor-not-allowed opacity-50{% endif %}"
+                                        class="delete-stage-trigger brand-danger-outline-button rounded-brand-input px-3 py-2 text-xs font-semibold uppercase {% if stage.assessment_count or stage.question_count %}cursor-not-allowed opacity-50{% endif %}"
                                         data-stage-id="{{ stage.id }}"
                                         data-stage-label="{{ stage.name|escapejs }}"
                                         data-stage-order="{{ stage.order }}"
@@ -134,41 +134,41 @@
     </div>
 </div>
 
-<div id="clear-stage-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 px-4">
-    <div class="w-full max-w-md rounded-brand border border-red-400/40 bg-brand-card p-6 shadow-2xl">
-        <h3 class="text-xl font-semibold text-white">Confirm Stage Question Clear</h3>
-        <p id="clear-stage-modal-message" class="mt-3 text-sm text-red-200">This action will remove every question from the selected stage.</p>
+<div id="clear-stage-modal" class="brand-modal-overlay">
+    <div class="brand-modal-panel brand-modal-panel-danger">
+        <h3 class="text-xl font-semibold text-brand-text">Confirm Stage Question Clear</h3>
+        <p id="clear-stage-modal-message" class="mt-3 text-sm text-brand-text-muted">This action will remove every question from the selected stage.</p>
 
         <form method="POST" class="mt-6 flex flex-wrap justify-end gap-3" id="clear-stage-form">
             {% csrf_token %}
-            <button type="button" id="clear-stage-cancel" class="border border-brand-border hover:border-brand-text-muted text-brand-text-muted hover:text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Cancel</button>
-            <button type="submit" class="bg-red-500 hover:bg-red-400 text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Yes, Clear Stage</button>
+            <button type="button" id="clear-stage-cancel" class="brand-secondary-button rounded-brand-input px-4 py-2 font-semibold">Cancel</button>
+            <button type="submit" class="brand-danger-button rounded-brand-input px-4 py-2 font-semibold">Yes, Clear Stage</button>
         </form>
     </div>
 </div>
 
-<div id="delete-stage-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 px-4">
-    <div class="w-full max-w-md rounded-brand border border-red-400/40 bg-brand-card p-6 shadow-2xl">
-        <h3 class="text-xl font-semibold text-white">Confirm Stage Delete</h3>
-        <p id="delete-stage-modal-message" class="mt-3 text-sm text-red-200">This action will permanently remove the selected stage.</p>
+<div id="delete-stage-modal" class="brand-modal-overlay">
+    <div class="brand-modal-panel brand-modal-panel-danger">
+        <h3 class="text-xl font-semibold text-brand-text">Confirm Stage Delete</h3>
+        <p id="delete-stage-modal-message" class="mt-3 text-sm text-brand-text-muted">This action will permanently remove the selected stage.</p>
 
         <form method="POST" class="mt-6 flex flex-wrap justify-end gap-3" id="delete-stage-form">
             {% csrf_token %}
-            <button type="button" id="delete-stage-cancel" class="border border-brand-border hover:border-brand-text-muted text-brand-text-muted hover:text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Cancel</button>
-            <button type="submit" class="bg-red-500 hover:bg-red-400 text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Yes, Delete Stage</button>
+            <button type="button" id="delete-stage-cancel" class="brand-secondary-button rounded-brand-input px-4 py-2 font-semibold">Cancel</button>
+            <button type="submit" class="brand-danger-button rounded-brand-input px-4 py-2 font-semibold">Yes, Delete Stage</button>
         </form>
     </div>
 </div>
 
-<div id="reset-cycle-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 px-4">
-    <div class="w-full max-w-md rounded-brand border border-red-400/40 bg-brand-card p-6 shadow-2xl">
-        <h3 class="text-xl font-semibold text-white">Confirm New Assessment Cycle</h3>
-        <p class="mt-3 text-sm text-red-200">This will start a new assessment cycle for executives from the first active stage. Previous cycle records will be preserved for reporting. Continue?</p>
+<div id="reset-cycle-modal" class="brand-modal-overlay">
+    <div class="brand-modal-panel brand-modal-panel-danger">
+        <h3 class="text-xl font-semibold text-brand-text">Confirm New Assessment Cycle</h3>
+        <p class="mt-3 text-sm text-brand-text-muted">This will start a new assessment cycle for executives from the first active stage. Previous cycle records will be preserved for reporting. Continue?</p>
 
         <form method="POST" action="{% url 'admin_portal_reset_cycle' %}" class="mt-6 flex flex-wrap justify-end gap-3" id="reset-cycle-form">
             {% csrf_token %}
-            <button type="button" id="reset-cycle-cancel" class="border border-brand-border hover:border-brand-text-muted text-brand-text-muted hover:text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Cancel</button>
-            <button type="submit" class="bg-red-500 hover:bg-red-400 text-white font-semibold py-2 px-4 rounded-brand-input transition-colors">Yes, Start New Cycle</button>
+            <button type="button" id="reset-cycle-cancel" class="brand-secondary-button rounded-brand-input px-4 py-2 font-semibold">Cancel</button>
+            <button type="submit" class="brand-danger-button rounded-brand-input px-4 py-2 font-semibold">Yes, Start New Cycle</button>
         </form>
     </div>
 </div>
