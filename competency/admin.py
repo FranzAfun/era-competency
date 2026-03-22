@@ -31,7 +31,7 @@ class ExecutiveAdmin(admin.ModelAdmin):
 
 @admin.register(Assessment)
 class AssessmentAdmin(admin.ModelAdmin):
-	list_display = ('id', 'executive', 'stage', 'stage_ref', 'attempt_number', 'correct_answers', 'score', 'passed', 'created_at')
+	list_display = ('id', 'executive', 'stage', 'stage_ref', 'attempt_number', 'correct_answers', 'total_questions', 'score', 'passed', 'created_at')
 	list_filter = ('passed', 'stage', 'stage_ref')
 	search_fields = ('executive__name', 'executive__email')
 

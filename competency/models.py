@@ -61,6 +61,7 @@ class Assessment(models.Model):
 	stage_ref = models.ForeignKey(Stage, on_delete=models.SET_NULL, null=True, blank=True, related_name='assessments')
 	attempt_number = models.PositiveIntegerField(default=1)
 	correct_answers = models.PositiveIntegerField(default=0)
+	total_questions = models.PositiveIntegerField(default=0)
 	score = models.FloatField(default=0)
 	passed = models.BooleanField(default=False)
 	created_at = models.DateTimeField(auto_now_add=True)

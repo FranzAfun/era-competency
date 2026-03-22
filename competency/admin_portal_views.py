@@ -78,6 +78,7 @@ def admin_dashboard_view(request):
 @user_passes_test(_is_portal_admin, login_url='admin_portal_login')
 def admin_stages_view(request):
     if request.method == 'POST':
+        edit_stage_id_raw = request.POST.get('edit_stage_id', '').strip()
         name = request.POST.get('name', '').strip()
         order_raw = request.POST.get('order', '').strip()
         is_active = request.POST.get('is_active') == 'on'
@@ -96,19 +97,53 @@ def admin_stages_view(request):
             messages.error(request, 'Stage order must be between 1 and 4.')
             return redirect('admin_portal_stages')
 
-        stage, created = Stage.objects.update_or_create(
-            order=order,
-            defaults={'name': name, 'is_active': is_active},
-        )
+        if edit_stage_id_raw:
+            try:
+                edit_stage_id = int(edit_stage_id_raw)
+            except ValueError:
+                messages.error(request, 'Invalid stage selected for update.')
+                return redirect('admin_portal_stages')
 
-        if created:
-            messages.success(request, f'{stage} created successfully.')
-        else:
-            messages.success(request, f'{stage} updated successfully.')
+            stage = Stage.objects.filter(id=edit_stage_id).first()
+            if stage is None:
+                messages.error(request, 'Stage not found for update.')
+                return redirect('admin_portal_stages')
+
+            if Stage.objects.exclude(id=stage.id).filter(order=order).exists():
+                messages.error(request, f'Stage order {order} is already in use. Edit that stage directly or choose another order.')
+                return redirect('admin_portal_stages')
+
+            if stage.order != order and stage.assessments.exists():
+                messages.error(request, f'{stage} already has assessment history. Its order cannot be changed; update the name or active status instead.')
+                return redirect('admin_portal_stages')
+
+            previous_label = str(stage)
+            previous_order = stage.order
+            stage.name = name
+            stage.order = order
+            stage.is_active = is_active
+            stage.save(update_fields=['name', 'order', 'is_active'])
+
+            if previous_order != order:
+                Question.objects.filter(stage_ref=stage).update(stage=order)
+                Assessment.objects.filter(stage_ref=stage).update(stage=order)
+
+            messages.success(request, f'{previous_label} updated successfully.')
+            return redirect('admin_portal_stages')
+
+        if Stage.objects.filter(order=order).exists():
+            messages.error(request, f'Stage order {order} is already in use. Edit the existing stage instead of creating a replacement.')
+            return redirect('admin_portal_stages')
+
+        stage = Stage.objects.create(name=name, order=order, is_active=is_active)
+        messages.success(request, f'{stage} created successfully.')
 
         return redirect('admin_portal_stages')
 
-    stages = Stage.objects.annotate(question_count=Count('questions')).order_by('order')
+    stages = Stage.objects.annotate(
+        question_count=Count('questions', distinct=True),
+        assessment_count=Count('assessments', distinct=True),
+    ).order_by('order')
     return render(request, 'admin_portal/stages.html', {'stages': stages})
 
 
@@ -126,6 +161,55 @@ def admin_reset_cycle_view(request):
         request,
         f'New cycle started. Cleared {total_assessments} assessment record(s) across {executive_count} executive(s).',
     )
+    return redirect('admin_portal_stages')
+
+
+@user_passes_test(_is_portal_admin, login_url='admin_portal_login')
+def admin_clear_stage_questions_view(request, stage_id):
+    if request.method != 'POST':
+        return redirect('admin_portal_stages')
+
+    stage = get_object_or_404(Stage, id=stage_id)
+    questions = Question.objects.filter(stage_ref=stage)
+    question_count = questions.count()
+
+    if question_count == 0:
+        messages.error(request, f'{stage} does not have any questions to clear.')
+    else:
+        questions.delete()
+        messages.success(
+            request,
+            f'Cleared {question_count} question(s) from {stage}. You can now rebuild the stage question set from scratch.',
+        )
+
+    return redirect('admin_portal_stages')
+
+
+@user_passes_test(_is_portal_admin, login_url='admin_portal_login')
+def admin_delete_stage_view(request, stage_id):
+    if request.method != 'POST':
+        return redirect('admin_portal_stages')
+
+    stage = get_object_or_404(Stage, id=stage_id)
+    if stage.assessments.exists():
+        messages.error(
+            request,
+            f'{stage} has assessment history and cannot be deleted. Set it inactive instead if you need to retire it.',
+        )
+        return redirect('admin_portal_stages')
+
+    question_count = stage.questions.count()
+    stage_label = str(stage)
+    if question_count:
+        stage.questions.all().delete()
+
+    stage.delete()
+
+    if question_count:
+        messages.success(request, f'Deleted {stage_label} and its {question_count} question(s).')
+    else:
+        messages.success(request, f'Deleted {stage_label}.')
+
     return redirect('admin_portal_stages')
 
 

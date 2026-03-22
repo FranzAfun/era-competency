@@ -1,5 +1,7 @@
 from django.urls import path
 from .admin_portal_views import (
+    admin_clear_stage_questions_view,
+    admin_delete_stage_view,
     admin_dashboard_view,
     admin_login_view,
     admin_logout_view,
@@ -35,6 +37,8 @@ urlpatterns += [
     path('portal/logout/', admin_logout_view, name='admin_portal_logout'),
     path('portal/', admin_dashboard_view, name='admin_portal_dashboard'),
     path('portal/stages/', admin_stages_view, name='admin_portal_stages'),
+    path('portal/stages/<int:stage_id>/clear-questions/', admin_clear_stage_questions_view, name='admin_portal_clear_stage_questions'),
+    path('portal/stages/<int:stage_id>/delete/', admin_delete_stage_view, name='admin_portal_delete_stage'),
     path('portal/stages/reset-cycle/', admin_reset_cycle_view, name='admin_portal_reset_cycle'),
     path('portal/questions/', admin_questions_view, name='admin_portal_questions'),
     path('portal/questions/<int:question_id>/delete/', admin_delete_question_view, name='admin_delete_question'),

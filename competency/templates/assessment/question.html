@@ -4,8 +4,8 @@
 
 {% block content %}
 <div class="w-full max-w-2xl mx-auto">
-    <div class="bg-brand-card rounded-brand p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
-        <p class="text-brand-text-muted text-sm mb-3">{{ stage_label }} · Question {{ question_number }} of {{ total_questions }}</p>
+    <div class="bg-brand-card rounded-brand px-4 py-5 sm:p-6 border border-brand-border ring-1 ring-brand-border/50 shadow-[0_8px_20px_rgba(2,6,23,0.35),0_2px_6px_rgba(2,6,23,0.22)]">
+        <p class="text-brand-text-muted text-sm mb-3 tracking-[0.01em]">{{ stage_label }} · Question {{ question_number }} of {{ total_questions }}</p>
 
         {% if assessment_unavailable %}
             <p class="text-brand-error text-sm">{{ error }}</p>
@@ -13,9 +13,11 @@
                 Back to Dashboard
             </a>
         {% else %}
-            <h2 class="text-white text-2xl font-semibold mb-6">{{ question.text }}</h2>
+            <div class="mb-5 sm:mb-6 border-l-2 border-brand-primary/70 pl-3 sm:pl-4">
+                <h2 class="max-w-[34rem] text-slate-50 text-[1.45rem] sm:text-[1.82rem] leading-[1.42] sm:leading-[1.38] font-medium tracking-[-0.015em] text-balance">{{ question.text }}</h2>
+            </div>
 
-            <form method="POST" class="space-y-4">
+            <form method="POST" class="space-y-5">
                 {% csrf_token %}
 
                 {% if error %}
@@ -32,26 +34,34 @@
                             {{ feedback.message }}
                         </div>
                     {% endif %}
-                    {% if feedback.explanation %}
-                        <div class="border border-brand-border bg-brand-bg/40 rounded-brand-input px-4 py-3 text-brand-text-muted text-sm">
-                            <span class="font-semibold text-white">Explanation:</span> {{ feedback.explanation }}
-                        </div>
-                    {% endif %}
                 {% endif %}
 
-                {% for option in question.options.all %}
-                    <label class="flex items-start gap-3 text-brand-text-muted cursor-pointer {% if selected_option_id == option.id %}text-white{% endif %}">
-                        <input
-                            type="radio"
-                            name="option"
-                            value="{{ option.id }}"
-                            class="mt-1 accent-brand-primary"
-                            {% if selected_option_id == option.id %}checked{% endif %}
-                            {% if not feedback %}{% if forloop.first %}required{% endif %}{% else %}disabled{% endif %}
-                        >
-                        <span>{{ option.text }}</span>
-                    </label>
-                {% endfor %}
+                <div class="space-y-3">
+                    {% for option in question.options.all %}
+                        <label class="group flex items-start gap-3 sm:gap-4 rounded-brand-input border px-3 py-3 sm:px-4 transition-all duration-200 {% if selected_option_id == option.id %}border-brand-primary bg-brand-primary/15 text-white shadow-[0_6px_18px_rgba(57,54,111,0.18)]{% else %}border-brand-border bg-brand-bg/30 text-brand-text-muted hover:border-brand-primary/45 hover:bg-brand-bg/50 hover:text-slate-200{% endif %} {% if feedback %}cursor-default{% else %}cursor-pointer{% endif %}">
+                            <input
+                                type="radio"
+                                name="option"
+                                value="{{ option.id }}"
+                                class="mt-1 h-4 w-4 shrink-0 accent-brand-primary"
+                                {% if selected_option_id == option.id %}checked{% endif %}
+                                {% if not feedback %}{% if forloop.first %}required{% endif %}{% else %}disabled{% endif %}
+                            >
+                            <div class="space-y-1">
+                                <span class="block text-xs font-semibold uppercase tracking-[0.18em] {% if selected_option_id == option.id %}text-indigo-200{% else %}text-slate-400 group-hover:text-indigo-200{% endif %}">
+                                    Option {{ forloop.counter }}
+                                </span>
+                                <span class="block max-w-[32rem] text-[0.97rem] sm:text-[1.05rem] leading-7 sm:leading-8">{{ option.text }}</span>
+                            </div>
+                        </label>
+                    {% endfor %}
+                </div>
+
+                {% if feedback and feedback.explanation %}
+                    <div class="border border-brand-border bg-brand-bg/40 rounded-brand-input px-3 py-4 sm:px-4 text-slate-300 text-[0.95rem] sm:text-[0.98rem] leading-7">
+                        <span class="font-semibold text-white">Explanation:</span> {{ feedback.explanation }}
+                    </div>
+                {% endif %}
 
                 {% if feedback %}
                     <button type="submit" name="action" value="next" class="w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 shadow-md hover:shadow-lg text-white font-bold py-3 px-6 rounded-brand-input transition-all duration-200 uppercase">

@@ -386,17 +386,14 @@ def start_assessment(request):
     feedback = request.session.get('assessment_feedback')
     selected_option_id = request.session.get('assessment_selected_option_id')
 
-    if total_questions < QUESTIONS_PER_STAGE:
+    if total_questions == 0:
         return render(request, 'assessment/question.html', {
             'question': None,
-            'error': (
-                f"{_get_stage_label(stage_number)} requires {QUESTIONS_PER_STAGE} questions. "
-                f"Only {total_questions} found."
-            ),
+            'error': f"{_get_stage_label(stage_number)} does not have any questions available yet.",
             'stage_number': stage_number,
             'stage_label': _get_stage_label(stage_number),
             'question_number': 0,
-            'total_questions': QUESTIONS_PER_STAGE,
+            'total_questions': 0,
             'feedback': None,
             'selected_option_id': None,
             'assessment_unavailable': True,
@@ -491,10 +488,11 @@ def result(request):
     if existing_assessment_id:
         assessment = Assessment.objects.filter(id=existing_assessment_id, executive=executive).first()
         if assessment:
+            total_answered = assessment.total_questions or assessment.responses.count()
             return render(request, 'result.html', {
                 'score': assessment.score,
                 'correct': assessment.correct_answers,
-                'total': QUESTIONS_PER_STAGE,
+                'total': total_answered,
                 'passed': assessment.passed,
                 'stage_number': assessment.stage,
                 'stage_label': _get_stage_label(assessment.stage),
@@ -542,6 +540,7 @@ def result(request):
         stage_ref=stage_ref,
         attempt_number=attempt_number,
         correct_answers=correct_count,
+        total_questions=total,
         score=score,
         passed=passed,
     )
