@@ -185,6 +185,12 @@ else:
     SECURE_SSL_REDIRECT = False
 
 
+# Session timeout — 30 min inactivity logout, reset on each request
+SESSION_COOKIE_AGE = 1800
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+
 # Email / OTP delivery
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 EMAIL_HOST = os.getenv('EMAIL_HOST', '')

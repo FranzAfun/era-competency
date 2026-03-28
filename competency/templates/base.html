@@ -325,7 +325,7 @@
             }
 
             .theme-toggle {
-                @apply inline-flex items-center gap-3 rounded-full border border-brand-border bg-brand-card/90 px-4 py-2 text-sm font-medium text-brand-text backdrop-blur;
+                @apply inline-flex items-center justify-center rounded-full border border-brand-border bg-brand-card/90 p-2 text-brand-text backdrop-blur;
                 box-shadow: var(--brand-toggle-shadow);
             }
 
@@ -335,7 +335,7 @@
             }
 
             .theme-toggle__icon {
-                @apply h-4 w-4 text-brand-primary;
+                @apply h-5 w-5 text-brand-primary;
             }
 
             html[data-theme="light"] [data-theme-icon="light"] {
@@ -373,7 +373,7 @@
 
 <body class="flex min-h-screen flex-col bg-brand-canvas">
     <div class="pointer-events-none fixed inset-x-0 top-0 z-40">
-        <div class="mx-auto flex max-w-7xl justify-end px-4 py-4">
+        <div class="mx-auto flex max-w-7xl justify-end px-4 py-3">
             <button type="button" class="theme-toggle pointer-events-auto" data-theme-toggle aria-label="Toggle theme">
                 <svg data-theme-icon="light" class="theme-toggle__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                     <circle cx="12" cy="12" r="4"></circle>
@@ -389,12 +389,11 @@
                 <svg data-theme-icon="dark" class="theme-toggle__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z"></path>
                 </svg>
-                <span data-theme-label>Theme</span>
             </button>
         </div>
     </div>
 
-    <main class="container mx-auto flex flex-1 items-center justify-center px-4 pb-8 pt-24 sm:pt-28">
+    <main class="container mx-auto flex flex-1 items-center justify-center px-4 pb-8 pt-16 sm:pt-20">
         {% block content %}{% endblock %}
     </main>
 
@@ -462,6 +461,10 @@
                         const loadingLabel = customLoadingText || 'Loading';
 
                         submitter.innerHTML = '<span class="btn-loading-spinner" aria-hidden="true"></span><span>' + loadingLabel + '</span>';
+                        submitter.style.display = 'inline-flex';
+                        submitter.style.alignItems = 'center';
+                        submitter.style.justifyContent = 'center';
+                        submitter.style.gap = '0.5rem';
                         submitter.classList.add('opacity-90', 'cursor-not-allowed');
                     } else {
                         submitter.value = 'Loading';

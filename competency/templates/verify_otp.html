@@ -15,6 +15,16 @@
             <p class="mb-4 text-sm text-brand-success">{{ info_message }}</p>
         {% endif %}
 
+        {% if otp_expires_at %}
+        <div id="otp-timer" class="mb-5 flex items-center justify-center gap-2 rounded-brand-input border border-brand-border bg-brand-bg px-4 py-3">
+            <svg class="h-4 w-4 text-brand-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span class="text-sm text-brand-text-muted">Code expires in</span>
+            <span id="otp-countdown" class="text-sm font-semibold tabular-nums text-brand-text">--:--</span>
+        </div>
+        {% endif %}
+
         <form method="POST" action="{% url 'verify_otp' %}" class="space-y-5">
             {% csrf_token %}
             <div class="space-y-3">
@@ -34,19 +44,87 @@
                 {% endif %}
             </div>
 
-            <button type="submit"
+            <button type="submit" id="otp-submit" data-loading-text="Verifying"
                     class="brand-primary-button w-full rounded-brand-input px-6 py-4 font-bold uppercase">
                 VERIFY OTP →
             </button>
         </form>
 
-        <form method="POST" action="{% url 'resend_otp' %}" class="mt-4">
+        <form method="POST" action="{% url 'resend_otp' %}" id="resend-form" class="mt-4">
             {% csrf_token %}
-            <button type="submit"
+            <button type="submit" id="resend-btn" data-loading-text="Sending"
                     class="brand-secondary-button w-full rounded-brand-input px-4 py-3 text-sm font-medium uppercase">
                 Resend OTP
             </button>
         </form>
+
+        {% if otp_expires_at %}
+        <script>
+        (function () {
+            var expiresAt = new Date('{{ otp_expires_at }}');
+            var countdownEl = document.getElementById('otp-countdown');
+            var timerEl = document.getElementById('otp-timer');
+            var submitBtn = document.getElementById('otp-submit');
+
+            function tick() {
+                var diff = Math.max(0, Math.floor((expiresAt - new Date()) / 1000));
+
+                if (diff <= 0) {
+                    timerEl.innerHTML =
+                        '<svg class="h-4 w-4 text-brand-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>' +
+                        '</svg>' +
+                        '<span class="text-sm font-medium text-brand-error">Code expired — please request a new one</span>';
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    resendBtn.disabled = false;
+                    resendBtn.textContent = 'RESEND OTP';
+                    resendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    return;
+                }
+
+                var min = Math.floor(diff / 60);
+                var sec = diff % 60;
+                countdownEl.textContent = min + ':' + (sec < 10 ? '0' : '') + sec;
+
+                if (diff <= 60) {
+                    countdownEl.classList.remove('text-brand-text');
+                    countdownEl.classList.add('text-brand-error');
+                }
+
+                setTimeout(tick, 1000);
+            }
+
+            tick();
+
+            /* ── Resend cooldown (2 minutes after OTP was sent) ── */
+            var COOLDOWN = 120;
+            var resendBtn = document.getElementById('resend-btn');
+            var createdAt = new Date('{{ otp_created_at }}');
+
+            function resendTick() {
+                var elapsed = Math.floor((new Date() - createdAt) / 1000);
+                var remaining = COOLDOWN - elapsed;
+
+                if (remaining <= 0) {
+                    resendBtn.disabled = false;
+                    resendBtn.textContent = 'RESEND OTP';
+                    resendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    return;
+                }
+
+                resendBtn.disabled = true;
+                resendBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                var m = Math.floor(remaining / 60);
+                var s = remaining % 60;
+                resendBtn.textContent = 'RESEND OTP (' + m + ':' + (s < 10 ? '0' : '') + s + ')';
+                setTimeout(resendTick, 1000);
+            }
+
+            resendTick();
+        })();
+        </script>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

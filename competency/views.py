@@ -1,5 +1,6 @@
 import random
 from datetime import timedelta
+from html import escape as _esc
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -44,6 +45,54 @@ def _generate_otp_code():
     return f"{random.randint(100000, 999999)}"
 
 
+def _build_email_html(title, body_html):
+    return f"""\
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f6f2ea;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f6f2ea;padding:40px 20px;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#fcf8f1;border-radius:10px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
+  <tr><td style="background-color:#454285;padding:24px 32px;text-align:center;">
+    <h1 style="margin:0;color:#ffffff;font-size:18px;font-weight:700;letter-spacing:3px;">ERA AXIS</h1>
+  </td></tr>
+  <tr><td style="padding:32px;">
+    <h2 style="margin:0 0 20px;color:#182134;font-size:20px;font-weight:600;">{title}</h2>
+    {body_html}
+  </td></tr>
+  <tr><td style="border-top:1px solid #ece7dd;padding:20px 32px;text-align:center;">
+    <p style="margin:0;color:#5c6b84;font-size:12px;">ERA AXIS Competency &copy; 2026 &middot; ERA Technologies</p>
+  </td></tr>
+</table>
+</td></tr></table>
+</body>
+</html>"""
+
+
+def _email_detail_row(label, value, is_last=False):
+    border = '' if is_last else 'border-bottom:1px solid #ece7dd;'
+    return (
+        f'<tr>'
+        f'<td style="padding:10px 14px;color:#5c6b84;font-size:13px;{border}">{_esc(str(label))}</td>'
+        f'<td style="padding:10px 14px;color:#182134;font-size:13px;font-weight:500;{border}">{_esc(str(value))}</td>'
+        f'</tr>'
+    )
+
+
+def _email_detail_table(rows):
+    """rows: list of (label, value) tuples."""
+    html_rows = ''.join(
+        _email_detail_row(label, value, is_last=(i == len(rows) - 1))
+        for i, (label, value) in enumerate(rows)
+    )
+    return (
+        f'<table width="100%" cellpadding="0" cellspacing="0" '
+        f'style="border:1px solid #ece7dd;border-radius:8px;overflow:hidden;margin:16px 0 0;">'
+        f'{html_rows}</table>'
+    )
+
+
 def _send_login_otp(executive):
     code = _generate_otp_code()
     expires_at = timezone.now() + timedelta(minutes=OTP_EXPIRY_MINUTES)
@@ -55,14 +104,27 @@ def _send_login_otp(executive):
         expires_at=expires_at,
     )
 
+    plain = (
+        f"Your ERA AXIS one-time password is {code}. "
+        f"It expires in {OTP_EXPIRY_MINUTES} minutes."
+    )
+
+    body_html = (
+        f'<p style="margin:0 0 16px;color:#5c6b84;font-size:14px;line-height:1.6;">'
+        f'Use the code below to verify your login. This code expires in {OTP_EXPIRY_MINUTES} minutes.</p>'
+        f'<div style="margin:24px 0;text-align:center;padding:20px;background-color:#ece7dd;border-radius:8px;">'
+        f'<span style="font-size:32px;font-weight:700;letter-spacing:8px;color:#454285;">{_esc(code)}</span>'
+        f'</div>'
+        f'<p style="margin:0;color:#5c6b84;font-size:13px;">'
+        f'If you didn\'t request this code, you can safely ignore this email.</p>'
+    )
+
     send_mail(
         subject='ERA AXIS Competency - Your Login OTP',
-        message=(
-            f"Your ERA AXIS one-time password is {code}. "
-            f"It expires in {OTP_EXPIRY_MINUTES} minutes."
-        ),
+        message=plain,
         from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
         recipient_list=[executive.email],
+        html_message=_build_email_html('Your Login Code', body_html),
         fail_silently=False,
     )
 
@@ -156,8 +218,10 @@ def _notify_admins_about_completion(assessment, total_questions):
 
     executive = assessment.executive
     stage_label = assessment.stage_name or (assessment.stage_ref.name if assessment.stage_ref else f"Stage {assessment.stage}")
+    status_label = 'Passed' if assessment.passed else 'Not Passed'
     subject = "ERA AXIS Competency - Executive Completed All Available Stages"
-    message = (
+
+    plain = (
         f"An executive has completed all competency stages.\n\n"
         f"Executive: {executive.name}\n"
         f"Email: {executive.email}\n"
@@ -166,14 +230,34 @@ def _notify_admins_about_completion(assessment, total_questions):
         f"Attempt: {assessment.attempt_number}\n"
         f"Score: {assessment.score}%\n"
         f"Correct Answers: {assessment.correct_answers}/{total_questions}\n"
-        f"Status: {'Passed' if assessment.passed else 'Not Passed'}\n"
+        f"Status: {status_label}\n"
+    )
+
+    status_color = '#047857' if assessment.passed else '#dc2626'
+    body_html = (
+        '<p style="margin:0 0 16px;color:#5c6b84;font-size:14px;line-height:1.6;">'
+        'An executive has completed all available competency stages.</p>'
+        + _email_detail_table([
+            ('Executive', executive.name),
+            ('Email', executive.email or '—'),
+            ('Role', executive.role),
+            ('Final Stage', stage_label),
+            ('Attempt', assessment.attempt_number),
+            ('Score', f'{assessment.score}%'),
+            ('Correct Answers', f'{assessment.correct_answers}/{total_questions}'),
+        ])
+        + f'<div style="margin:16px 0 0;padding:10px 14px;border-radius:8px;'
+          f'background-color:{"#e6f5ef" if assessment.passed else "#fef2f2"};">'
+          f'<span style="font-size:13px;font-weight:600;color:{status_color};">'
+          f'{_esc(status_label)}</span></div>'
     )
 
     send_mail(
         subject=subject,
-        message=message,
+        message=plain,
         from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
         recipient_list=recipient_list,
+        html_message=_build_email_html('Executive Completed All Stages', body_html),
         fail_silently=True,
     )
 
@@ -192,7 +276,8 @@ def _notify_admins_about_three_failed_attempts(assessment):
     executive = assessment.executive
     stage_label = assessment.stage_name or (assessment.stage_ref.name if assessment.stage_ref else f"Stage {assessment.stage}")
     subject = f"ERA AXIS Competency - 3 Failed Attempts ({stage_label})"
-    message = (
+
+    plain = (
         f"An executive has reached 3 failed attempts on the same stage.\n\n"
         f"Executive: {executive.name}\n"
         f"Email: {executive.email}\n"
@@ -202,11 +287,27 @@ def _notify_admins_about_three_failed_attempts(assessment):
         f"Latest Score: {assessment.score}%\n"
     )
 
+    body_html = (
+        '<div style="margin:0 0 16px;padding:12px 16px;border-radius:8px;'
+        'background-color:#fef2f2;border:1px solid #fecaca;">'
+        '<p style="margin:0;color:#dc2626;font-size:14px;font-weight:500;">'
+        'An executive has reached 3 failed attempts on the same stage.</p></div>'
+        + _email_detail_table([
+            ('Executive', executive.name),
+            ('Email', executive.email or '—'),
+            ('Role', executive.role),
+            ('Stage', stage_label),
+            ('Latest Attempt', assessment.attempt_number),
+            ('Latest Score', f'{assessment.score}%'),
+        ])
+    )
+
     send_mail(
         subject=subject,
-        message=message,
+        message=plain,
         from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
         recipient_list=recipient_list,
+        html_message=_build_email_html(f'3 Failed Attempts — {_esc(stage_label)}', body_html),
         fail_silently=True,
     )
 
@@ -218,7 +319,8 @@ def _notify_executive_about_stage_pass(assessment, total_questions):
 
     stage_label = assessment.stage_name or (assessment.stage_ref.name if assessment.stage_ref else f"Stage {assessment.stage}")
     subject = f"ERA AXIS Competency - You Passed {stage_label}"
-    message = (
+
+    plain = (
         f"Congratulations {executive.name},\n\n"
         f"You passed {stage_label}.\n"
         f"Score: {assessment.score}%\n"
@@ -227,11 +329,28 @@ def _notify_executive_about_stage_pass(assessment, total_questions):
         f"You can now continue with your competency journey."
     )
 
+    body_html = (
+        f'<p style="margin:0 0 16px;color:#182134;font-size:15px;line-height:1.6;">'
+        f'Congratulations <strong>{_esc(executive.name)}</strong>,</p>'
+        f'<div style="margin:0 0 20px;padding:16px;border-radius:8px;background-color:#e6f5ef;text-align:center;">'
+        f'<p style="margin:0 0 4px;color:#047857;font-size:16px;font-weight:600;">'
+        f'You passed {_esc(stage_label)}</p>'
+        f'<p style="margin:0;color:#047857;font-size:28px;font-weight:700;">{assessment.score}%</p></div>'
+        + _email_detail_table([
+            ('Stage', stage_label),
+            ('Correct Answers', f'{assessment.correct_answers}/{total_questions}'),
+            ('Attempt', assessment.attempt_number),
+        ])
+        + '<p style="margin:20px 0 0;color:#5c6b84;font-size:14px;line-height:1.6;">'
+          'You can now continue with your competency journey.</p>'
+    )
+
     send_mail(
         subject=subject,
-        message=message,
+        message=plain,
         from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
         recipient_list=[executive.email],
+        html_message=_build_email_html(f'You Passed {_esc(stage_label)}', body_html),
         fail_silently=True,
     )
 
@@ -322,9 +441,15 @@ def verify_otp_view(request):
                 request.session.pop('pending_executive_id', None)
                 return redirect('dashboard')
 
+    active_otp = LoginOTP.objects.filter(executive=executive, is_used=False).first()
+    otp_expires_at = active_otp.expires_at.isoformat() if active_otp and not active_otp.is_expired() else None
+    otp_created_at = active_otp.created_at.isoformat() if active_otp else None
+
     return render(request, 'verify_otp.html', {
         'errors': errors,
         'email': executive.email,
+        'otp_expires_at': otp_expires_at,
+        'otp_created_at': otp_created_at,
     })
 
 
@@ -337,9 +462,15 @@ def resend_otp_view(request):
     executive = get_object_or_404(Executive, id=pending_executive_id)
     _send_login_otp(executive)
 
+    active_otp = LoginOTP.objects.filter(executive=executive, is_used=False).first()
+    otp_expires_at = active_otp.expires_at.isoformat() if active_otp and not active_otp.is_expired() else None
+    otp_created_at = active_otp.created_at.isoformat() if active_otp else None
+
     return render(request, 'verify_otp.html', {
         'email': executive.email,
         'info_message': f'A new OTP has been sent to {executive.email}.',
+        'otp_expires_at': otp_expires_at,
+        'otp_created_at': otp_created_at,
     })
 
 def dashboard(request):
@@ -370,6 +501,13 @@ def dashboard(request):
     user['email'] = executive.email
     user['date'] = str(executive.date)
 
+    # Group performance history by cycle for structured display
+    perf_by_cycle = {}
+    for a in assessments[:50]:
+        if a.cycle_id not in perf_by_cycle:
+            perf_by_cycle[a.cycle_id] = {'cycle': a.cycle, 'assessments': []}
+        perf_by_cycle[a.cycle_id]['assessments'].append(a)
+
     return render(request, 'dashboard.html', {
         'user': user,
         'next_stage': next_stage,
@@ -385,7 +523,7 @@ def dashboard(request):
         'completed_stage_count': completed_stage_count,
         'stage_count': len(active_stage_orders),
         'current_cycle': current_cycle,
-        'performance_history': assessments[:10],
+        'performance_by_cycle': list(perf_by_cycle.values()),
     })
 
 def logout_view(request):

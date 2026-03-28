@@ -57,80 +57,155 @@
 
     <div class="brand-panel p-6">
         <h2 class="text-brand-text text-xl font-semibold mb-4">Flagged Difficult Questions</h2>
-        <div class="overflow-x-auto">
-            <table class="min-w-full text-sm mb-2">
-                <thead>
-                    <tr class="brand-table-head">
-                        <th class="text-left py-2 pr-4">Stage</th>
-                        <th class="text-left py-2 pr-4">Order</th>
-                        <th class="text-left py-2 pr-4">Wrong Rate</th>
-                        <th class="text-left py-2">Question</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for question in difficult_questions %}
-                        <tr class="brand-table-row">
-                            <td class="py-3 pr-4">{{ question.stage_ref.name|default:question.stage }}</td>
-                            <td class="py-3 pr-4">{{ question.order }}</td>
-                            <td class="py-3 pr-4 text-brand-error">{{ question.wrong_rate|floatformat:2 }}%</td>
-                            <td class="py-3">{{ question.text|truncatechars:120 }}</td>
-                        </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="4" class="py-4 text-brand-text-muted">No flagged difficult questions yet (minimum 3 responses needed).</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="space-y-2">
+            {% for question in difficult_questions %}
+                <div class="flagged-q group rounded-brand-input border border-brand-border/50 overflow-hidden cursor-pointer"
+                     onclick="this.querySelector('.flagged-q-body').classList.toggle('hidden')">
+                    <!-- Summary row -->
+                    <div class="flex items-center gap-3 px-4 py-3">
+                        <span class="inline-flex min-w-[3.5rem] items-center justify-center rounded-md bg-brand-bg px-2 py-1 text-xs font-bold tabular-nums text-brand-text">
+                            {{ question.wrong_rate|floatformat:0 }}%
+                        </span>
+                        <div class="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-brand-border/30">
+                            <div class="h-full rounded-full bg-brand-warning" style="width: {{ question.wrong_rate|floatformat:0 }}%"></div>
+                        </div>
+                        <span class="shrink-0 text-xs text-brand-text-muted">{{ question.stage_ref.name|default:question.stage }} &middot; Q{{ question.order }}</span>
+                        <p class="flex-1 truncate text-sm text-brand-text">{{ question.text }}</p>
+                        <svg class="h-4 w-4 shrink-0 text-brand-text-muted transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <!-- Expanded body -->
+                    <div class="flagged-q-body hidden border-t border-brand-border/40 bg-brand-bg/50 px-4 py-4">
+                        <p class="text-sm leading-relaxed text-brand-text">{{ question.text }}</p>
+                        <div class="mt-2 flex gap-4 text-xs text-brand-text-muted">
+                            <span>Wrong rate: <strong class="text-brand-text">{{ question.wrong_rate|floatformat:1 }}%</strong></span>
+                            <span>Total responses: <strong class="text-brand-text">{{ question.total_answers }}</strong></span>
+                            <span>Wrong answers: <strong class="text-brand-text">{{ question.wrong_answers }}</strong></span>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <p class="py-4 text-sm text-brand-text-muted">No flagged difficult questions yet (minimum 3 responses needed).</p>
+            {% endfor %}
         </div>
     </div>
 
     <div class="brand-panel p-6">
-        <h2 class="text-brand-text text-xl font-semibold mb-4">Recent Assessments</h2>
-        <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
-                <thead>
-                    <tr class="brand-table-head">
-                        <th class="text-left py-2 pr-4">Cycle</th>
-                        <th class="text-left py-2 pr-4">Executive</th>
-                        <th class="text-left py-2 pr-4">Stage</th>
-                        <th class="text-left py-2 pr-4">Attempt</th>
-                        <th class="text-left py-2 pr-4">Score</th>
-                        <th class="text-left py-2">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in recent_assessments %}
-                        <tr class="brand-table-row">
-                            <td class="py-3 pr-4">{{ item.cycle.name|default:"Assessment 1" }}</td>
-                            <td class="py-3 pr-4 text-brand-text">{{ item.executive.name }}</td>
-                            <td class="py-3 pr-4">
-                                {% if item.stage_name %}
-                                    {{ item.stage_name }}
-                                {% elif item.stage_ref %}
-                                    {{ item.stage_ref.name }}
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+            <h2 class="text-brand-text text-xl font-semibold">Executive Status</h2>
+            <div class="relative">
+                <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+                </svg>
+                <input
+                    type="text"
+                    id="exec-search"
+                    placeholder="Search by name, role or email…"
+                    autocomplete="off"
+                    class="brand-input rounded-brand-input py-2 pl-9 pr-4 text-sm w-full sm:w-72"
+                />
+            </div>
+        </div>
+
+        <div id="exec-list" class="space-y-3">
+            {% for exec_item in executive_status %}
+            <div class="exec-card overflow-hidden rounded-brand border border-brand-border"
+                 data-search="{{ exec_item.executive.name|lower }} {{ exec_item.executive.role|lower }} {{ exec_item.executive.email|lower|default:'' }}">
+
+                <!-- Executive header -->
+                <div class="flex items-start justify-between gap-4 border-b border-brand-border bg-brand-bg px-5 py-4 sm:items-center">
+                    <div>
+                        <p class="font-semibold text-brand-text">{{ exec_item.executive.name }}</p>
+                        <p class="text-sm text-brand-text-muted">{{ exec_item.executive.role }}</p>
+                        {% if exec_item.executive.email %}
+                            <p class="mt-0.5 text-xs text-brand-text-muted">{{ exec_item.executive.email }}</p>
+                        {% endif %}
+                    </div>
+                    {% if exec_item.current_cycle_row %}
+                        <div class="shrink-0 text-right">
+                            <p class="text-2xl font-bold text-brand-primary">{{ exec_item.current_cycle_row.completion_pct }}%</p>
+                            <p class="text-xs text-brand-text-muted">{{ exec_item.current_cycle_row.completed_count }}/{{ exec_item.current_cycle_row.total_stages }} stages passed</p>
+                            <p class="text-xs text-brand-text-muted">{{ current_cycle.name }}</p>
+                        </div>
+                    {% else %}
+                        <span class="shrink-0 text-sm italic text-brand-text-muted">No assessments yet</span>
+                    {% endif %}
+                </div>
+
+                <!-- Cycle breakdown rows -->
+                {% if exec_item.rows %}
+                    {% for row in exec_item.rows %}
+                    <div class="px-5 py-4{% if not forloop.last %} border-b border-brand-border/50{% endif %}">
+                        <!-- Cycle label -->
+                        <div class="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span class="text-sm font-semibold text-brand-text">{{ row.cycle.name }}</span>
+                            <span class="text-xs text-brand-text-muted">&mdash; started {{ row.cycle.created_at|date:"M d, Y" }}</span>
+                            {% if row.cycle.is_current %}
+                                <span class="inline-flex items-center rounded-full bg-brand-primary px-2 py-0.5 text-xs font-semibold text-white">Current</span>
+                            {% endif %}
+                            <span class="ml-auto text-sm text-brand-text-muted">
+                                {{ row.completed_count }}/{{ row.total_stages }} stages &bull;
+                                <span class="font-semibold text-brand-text">{{ row.completion_pct }}%</span>
+                            </span>
+                        </div>
+
+                        <!-- Stage cells -->
+                        <div class="grid gap-2" style="grid-template-columns: repeat({{ row.stage_data|length }}, minmax(0, 1fr))">
+                            {% for sd in row.stage_data %}
+                            <div class="rounded-lg border p-3 text-center text-xs
+                                {% if sd.passed %}border-brand-success/30 bg-brand-success-soft/55
+                                {% elif sd.attempted %}border-brand-error/30 bg-brand-error-soft/55
+                                {% else %}border-brand-border/50 bg-brand-bg/40{% endif %}">
+                                <p class="mb-1.5 text-xs font-semibold text-brand-text">{{ sd.stage.name }}</p>
+                                {% if sd.attempted %}
+                                    <p class="text-base font-bold {% if sd.passed %}text-brand-success{% else %}text-brand-error{% endif %}">{{ sd.best_score }}%</p>
+                                    <p class="mt-0.5 font-medium {% if sd.passed %}text-brand-success{% else %}text-brand-error{% endif %}">{% if sd.passed %}Passed{% else %}Failed{% endif %}</p>
+                                    <p class="mt-1 text-brand-text-muted">{{ sd.attempts }} attempt{{ sd.attempts|pluralize }}</p>
+                                    <p class="text-brand-text-muted">{{ sd.last_date }}</p>
                                 {% else %}
-                                    Stage {{ item.stage }}
+                                    <p class="mt-2 text-brand-text-muted">—</p>
+                                    <p class="text-brand-text-muted">Not attempted</p>
                                 {% endif %}
-                            </td>
-                            <td class="py-3 pr-4">{{ item.attempt_number }}</td>
-                            <td class="py-3 pr-4">{{ item.score }}%</td>
-                            <td class="py-3">
-                                {% if item.passed %}
-                                    <span class="text-brand-success">Passed</span>
-                                {% else %}
-                                    <span class="text-brand-error">Failed</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="6" class="py-4 text-brand-text-muted">No assessments yet.</td>
-                        </tr>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
                     {% endfor %}
-                </tbody>
-            </table>
+                {% else %}
+                    <div class="px-5 py-4 text-sm italic text-brand-text-muted">No assessment activity yet.</div>
+                {% endif %}
+            </div>
+            {% empty %}
+                <p class="py-4 text-sm text-brand-text-muted">No executives registered yet.</p>
+            {% endfor %}
+        </div>
+
+        <div id="exec-no-results" class="hidden py-8 text-center text-sm text-brand-text-muted">
+            No executives match your search.
         </div>
     </div>
 </div>
+
+<script>
+(function () {
+    const input = document.getElementById('exec-search');
+    const cards = document.querySelectorAll('.exec-card');
+    const noResults = document.getElementById('exec-no-results');
+
+    input.addEventListener('input', function () {
+        const q = this.value.toLowerCase().trim();
+        let visible = 0;
+
+        cards.forEach(function (card) {
+            const match = !q || (card.dataset.search || '').includes(q);
+            card.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+
+        noResults.classList.toggle('hidden', !q || visible > 0);
+    });
+})();
+</script>
+
 {% endblock %}

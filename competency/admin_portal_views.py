@@ -60,6 +60,9 @@ def admin_logout_view(request):
 @user_passes_test(_is_portal_admin, login_url='admin_portal_login')
 def admin_dashboard_view(request):
     current_cycle = _get_current_cycle()
+    active_stages = list(Stage.objects.filter(is_active=True).order_by('order'))
+    total_stages = len(active_stages)
+
     stage_stats = []
     for stage in Stage.objects.order_by('order'):
         question_count = Question.objects.filter(stage_ref=stage).count()
@@ -77,6 +80,69 @@ def admin_dashboard_view(request):
             'average_score': round(average_score, 2),
         })
 
+    # Build structured executive status grouped by executive → cycle → stage
+    all_cycles = list(AssessmentCycle.objects.order_by('sequence'))
+    executive_status = []
+
+    for executive in Executive.objects.order_by('name'):
+        exec_assessments = list(
+            Assessment.objects.filter(executive=executive)
+            .select_related('cycle', 'stage_ref')
+            .order_by('cycle__sequence', 'created_at')
+        )
+
+        # Cycles this executive has activity in, preserving sequence order
+        cycle_ids_seen = list(dict.fromkeys(a.cycle_id for a in exec_assessments))
+        cycles_with_activity = [c for c in all_cycles if c.id in cycle_ids_seen]
+
+        exec_rows = []
+        for cycle in cycles_with_activity:
+            cycle_assessments = [a for a in exec_assessments if a.cycle_id == cycle.id]
+
+            stage_data = []
+            for stage in active_stages:
+                stage_attempts = [a for a in cycle_assessments if a.stage_ref_id == stage.id]
+                if stage_attempts:
+                    passed = any(a.passed for a in stage_attempts)
+                    best_score = round(max(a.score for a in stage_attempts), 1)
+                    last_date = max(a.created_at for a in stage_attempts).strftime('%b %d, %Y')
+                    stage_data.append({
+                        'stage': stage,
+                        'attempted': True,
+                        'passed': passed,
+                        'best_score': best_score,
+                        'attempts': len(stage_attempts),
+                        'last_date': last_date,
+                    })
+                else:
+                    stage_data.append({
+                        'stage': stage,
+                        'attempted': False,
+                        'passed': False,
+                        'best_score': None,
+                        'attempts': 0,
+                        'last_date': None,
+                    })
+
+            completed_count = sum(1 for sd in stage_data if sd['passed'])
+            completion_pct = round((completed_count / total_stages) * 100) if total_stages else 0
+
+            exec_rows.append({
+                'cycle': cycle,
+                'stage_data': stage_data,
+                'completed_count': completed_count,
+                'total_stages': total_stages,
+                'completion_pct': completion_pct,
+            })
+
+        current_cycle_row = next((r for r in exec_rows if r['cycle'].id == current_cycle.id), None)
+
+        executive_status.append({
+            'executive': executive,
+            'rows': exec_rows,
+            'current_cycle_row': current_cycle_row,
+        })
+
     context = {
         'total_executives': Executive.objects.count(),
         'total_questions': Question.objects.count(),
@@ -84,8 +150,9 @@ def admin_dashboard_view(request):
         'overall_pass_rate': _overall_pass_rate(),
         'current_cycle': current_cycle,
         'stage_stats': stage_stats,
-        'recent_assessments': Assessment.objects.select_related('executive', 'stage_ref', 'cycle').order_by('-created_at')[:10],
         'difficult_questions': _get_difficult_questions(),
+        'executive_status': executive_status,
+        'active_stages': active_stages,
     }
 
     return render(request, 'admin_portal/dashboard.html', context)
