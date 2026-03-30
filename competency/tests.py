@@ -101,8 +101,8 @@ class AssessmentFlowTests(TestCase):
 		result_response = self.client.get(reverse('result'))
 
 		self.assertEqual(result_response.status_code, 200)
-		self.assertContains(result_response, 'Total: <span class="text-white">22</span>', html=True)
-		self.assertContains(result_response, 'Score: <span class="text-white">100.0%</span>', html=True)
+		self.assertContains(result_response, 'Total: <span class="text-brand-text">22</span>', html=True)
+		self.assertContains(result_response, 'Score: <span class="text-brand-text">100.0%</span>', html=True)
 
 	def test_existing_result_page_uses_saved_response_count(self):
 		assessment = Assessment.objects.create(
@@ -135,7 +135,7 @@ class AssessmentFlowTests(TestCase):
 		response = self.client.get(reverse('result'))
 
 		self.assertEqual(response.status_code, 200)
-		self.assertContains(response, 'Total: <span class="text-white">4</span>', html=True)
+		self.assertContains(response, 'Total: <span class="text-brand-text">4</span>', html=True)
 
 	def test_existing_result_page_keeps_total_after_stage_questions_are_deleted(self):
 		assessment = Assessment.objects.create(
@@ -170,7 +170,7 @@ class AssessmentFlowTests(TestCase):
 		response = self.client.get(reverse('result'))
 
 		self.assertEqual(response.status_code, 200)
-		self.assertContains(response, 'Total: <span class="text-white">3</span>', html=True)
+		self.assertContains(response, 'Total: <span class="text-brand-text">3</span>', html=True)
 
 	def test_admin_completion_email_is_sent_after_last_active_stage(self):
 		stage_two = Stage.objects.create(name='Stage 2', order=2, is_active=True)
@@ -252,6 +252,66 @@ class AssessmentFlowTests(TestCase):
 		dashboard_response = self.client.get(reverse('dashboard'))
 		self.assertContains(dashboard_response, 'Continue')
 
+	def test_locked_cycle_blocks_dashboard_start_and_assessment_entry(self):
+		self.current_cycle.is_locked = True
+		self.current_cycle.save(update_fields=['is_locked'])
+
+		dashboard_response = self.client.get(reverse('dashboard'))
+
+		self.assertEqual(dashboard_response.status_code, 200)
+		self.assertContains(dashboard_response, 'Cycle Locked')
+		self.assertContains(dashboard_response, 'is currently locked by admin')
+
+		assessment_response = self.client.get(reverse('start_assessment'))
+
+		self.assertEqual(assessment_response.status_code, 200)
+		self.assertContains(assessment_response, 'is currently locked')
+		self.assertContains(assessment_response, 'Back to Dashboard')
+
+	def test_finish_stage_still_reaches_result_if_cycle_locks_mid_attempt(self):
+		response = self.client.get(reverse('start_assessment') + '?restart=1')
+		self.assertEqual(response.status_code, 200)
+
+		session = self.client.session
+		question_ids = list(session['assessment_question_ids'])
+		final_question_id = question_ids[-1]
+
+		for question_id in question_ids[:-1]:
+			option = Option.objects.get(question_id=question_id, is_correct=True)
+			submit_response = self.client.post(reverse('start_assessment'), {
+				'action': 'submit',
+				'option': option.id,
+			})
+			self.assertEqual(submit_response.status_code, 200)
+			next_response = self.client.post(reverse('start_assessment'), {
+				'action': 'next',
+			})
+			self.assertEqual(next_response.status_code, 302)
+			self.assertEqual(next_response.url, reverse('start_assessment'))
+
+		final_option = Option.objects.get(question_id=final_question_id, is_correct=True)
+		final_submit_response = self.client.post(reverse('start_assessment'), {
+			'action': 'submit',
+			'option': final_option.id,
+		})
+		self.assertEqual(final_submit_response.status_code, 200)
+		self.assertContains(final_submit_response, 'Correct answer.')
+
+		self.current_cycle.is_locked = True
+		self.current_cycle.save(update_fields=['is_locked'])
+
+		finish_response = self.client.post(reverse('start_assessment'), {
+			'action': 'next',
+		}, follow=False)
+
+		self.assertEqual(finish_response.status_code, 302)
+		self.assertEqual(finish_response.url, reverse('result'))
+
+		result_response = self.client.get(reverse('result'))
+		self.assertEqual(result_response.status_code, 200)
+		self.assertContains(result_response, 'Result')
+		self.assertEqual(Assessment.objects.filter(executive=self.executive, cycle=self.current_cycle).count(), 1)
+
 	def test_start_new_cycle_preserves_history_and_restarts_progression(self):
 		Assessment.objects.create(
 			executive=self.executive,
@@ -281,6 +341,7 @@ class AssessmentFlowTests(TestCase):
 		self.assertEqual(AssessmentCycle.objects.filter(is_current=True).count(), 1)
 		new_cycle = AssessmentCycle.objects.get(is_current=True)
 		self.assertNotEqual(new_cycle.id, self.current_cycle.id)
+		self.assertFalse(new_cycle.is_locked)
 
 		self.client.logout()
 		session = self.client.session
@@ -334,6 +395,15 @@ class AdminStageManagementTests(TestCase):
 		self.stage.refresh_from_db()
 		self.assertEqual(self.stage.name, 'Updated Stage Name')
 		self.assertFalse(self.stage.is_active)
+
+	def test_admin_can_toggle_current_cycle_lock(self):
+		response = self.client.post(reverse('admin_portal_toggle_cycle_lock'), {
+			'lock_cycle': '1',
+		})
+
+		self.assertEqual(response.status_code, 302)
+		self.current_cycle.refresh_from_db()
+		self.assertTrue(self.current_cycle.is_locked)
 
 	def test_admin_can_change_stage_order_when_no_assessments_exist(self):
 		response = self.client.post(reverse('admin_portal_stages'), {
@@ -440,3 +510,31 @@ class AdminStageManagementTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertTrue(Stage.objects.filter(id=self.stage.id).exists())
 		self.assertContains(response, 'cannot be deleted')
+
+	def test_admin_dashboard_keeps_inactive_stage_history_visible(self):
+		executive = Executive.objects.create(
+			name='Inactive Stage User',
+			role='Manager',
+			email='inactive-history@example.com',
+			date=date.today(),
+		)
+		Assessment.objects.create(
+			executive=executive,
+			cycle=self.current_cycle,
+			stage=1,
+			stage_name=self.stage.name,
+			stage_ref=self.stage,
+			attempt_number=1,
+			correct_answers=3,
+			total_questions=3,
+			score=100,
+			passed=True,
+		)
+		self.stage.is_active = False
+		self.stage.save(update_fields=['is_active'])
+
+		response = self.client.get(reverse('admin_portal_dashboard'))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, '1/1 stages passed')
+		self.assertContains(response, 'Inactive')

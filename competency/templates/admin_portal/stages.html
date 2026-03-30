@@ -16,7 +16,19 @@
         <div class="brand-callout-danger mb-6 p-4">
             <h2 class="text-brand-text text-lg font-semibold">Start New Cycle</h2>
             <p class="text-brand-text-muted text-sm mt-2">This starts a new assessment cycle from the first active stage while preserving all previous cycle records. Use this only when starting a fresh assessment round.</p>
-            <button type="button" id="open-reset-cycle-modal" class="brand-danger-button mt-4 rounded-brand-input px-4 py-2 text-sm font-bold uppercase">Start New Cycle</button>
+            <div class="mt-4 flex flex-wrap items-center gap-3">
+                <button type="button" id="open-reset-cycle-modal" class="brand-danger-button rounded-brand-input px-4 py-2 text-sm font-bold uppercase">Start New Cycle</button>
+                <form method="POST" action="{% url 'admin_portal_toggle_cycle_lock' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="lock_cycle" value="{% if is_cycle_locked %}0{% else %}1{% endif %}">
+                    <button type="submit" class="brand-secondary-button rounded-brand-input px-4 py-2 text-sm font-bold uppercase">
+                        {% if is_cycle_locked %}Unlock Current Cycle{% else %}Lock Current Cycle{% endif %}
+                    </button>
+                </form>
+                <span class="text-sm {% if is_cycle_locked %}text-brand-error{% else %}text-brand-success{% endif %}">
+                    {{ current_cycle.name }} is {% if is_cycle_locked %}locked{% else %}open{% endif %}.
+                </span>
+            </div>
         </div>
 
         {% if messages %}
@@ -41,8 +53,10 @@
             </div>
             <div>
                 <label class="inline-flex items-center gap-2 text-brand-text-muted text-sm mb-3">
-                    <input type="checkbox" id="stage-is-active-input" name="is_active" checked class="accent-brand-primary"> Active
+                    <input type="checkbox" id="stage-is-active-input" name="is_active" checked class="accent-brand-primary"> Active in cycle
                 </label>
+            </div>
+            <div>
                 <button type="submit" id="save-stage-button" class="brand-primary-button w-full rounded-brand-input px-4 py-3 font-bold uppercase">Save Stage</button>
             </div>
         </form>
@@ -53,12 +67,13 @@
             <button type="button" id="cancel-stage-edit-button" class="brand-secondary-button hidden rounded-brand-input px-6 py-3 font-bold uppercase">Cancel Update</button>
         </div>
 
-        <p class="mt-4 text-brand-text-muted text-sm">Need to rebuild a full stage? Use Clear Questions on a stage below to empty only that stage's question bank without changing the stage order.</p>
+        <p class="mt-4 text-brand-text-muted text-sm">Use <strong>Active in cycle</strong> when a stage should count in the assessment journey. To pause all assessment activity without changing stage setup, use the cycle lock button above.</p>
+        <p class="mt-2 text-brand-text-muted text-sm">Need to rebuild a full stage? Use Clear Questions on a stage below to empty only that stage's question bank without changing the stage order.</p>
     </div>
 
     <div class="brand-panel p-6">
         <h2 class="text-brand-text text-xl font-semibold mb-4">Configured Stages</h2>
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto pb-2">
             <table class="min-w-full text-sm">
                 <thead>
                     <tr class="brand-table-head">
@@ -85,10 +100,10 @@
                             <td class="py-3 pr-4">{{ stage.question_count }}/25</td>
                             <td class="py-3 pr-4">{{ stage.assessment_count }}</td>
                             <td class="py-3">
-                                <div class="flex flex-wrap gap-2">
+                                <div class="flex flex-nowrap items-center gap-1.5 whitespace-nowrap">
                                     <button
                                         type="button"
-                                        class="stage-edit-trigger brand-secondary-button rounded-brand-input px-3 py-2 text-xs font-semibold uppercase"
+                                        class="stage-edit-trigger brand-secondary-button shrink-0 rounded-brand-input px-2.5 py-1.5 text-[11px] font-semibold uppercase leading-none"
                                         data-stage-id="{{ stage.id }}"
                                         data-stage-name="{{ stage.name|escapejs }}"
                                         data-stage-order="{{ stage.order }}"
@@ -99,7 +114,7 @@
                                     </button>
                                     <button
                                         type="button"
-                                        class="clear-stage-trigger brand-danger-outline-button rounded-brand-input px-3 py-2 text-xs font-semibold uppercase {% if not stage.question_count %}cursor-not-allowed opacity-50{% endif %}"
+                                        class="clear-stage-trigger brand-danger-outline-button shrink-0 rounded-brand-input px-2.5 py-1.5 text-[11px] font-semibold uppercase leading-none {% if not stage.question_count %}cursor-not-allowed opacity-50{% endif %}"
                                         data-stage-id="{{ stage.id }}"
                                         data-stage-label="{{ stage.name|escapejs }}"
                                         data-stage-order="{{ stage.order }}"
@@ -110,7 +125,7 @@
                                     </button>
                                     <button
                                         type="button"
-                                        class="delete-stage-trigger brand-danger-outline-button rounded-brand-input px-3 py-2 text-xs font-semibold uppercase {% if stage.assessment_count or stage.question_count %}cursor-not-allowed opacity-50{% endif %}"
+                                        class="delete-stage-trigger brand-danger-outline-button shrink-0 rounded-brand-input px-2.5 py-1.5 text-[11px] font-semibold uppercase leading-none {% if stage.assessment_count or stage.question_count %}cursor-not-allowed opacity-50{% endif %}"
                                         data-stage-id="{{ stage.id }}"
                                         data-stage-label="{{ stage.name|escapejs }}"
                                         data-stage-order="{{ stage.order }}"

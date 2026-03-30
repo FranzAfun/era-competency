@@ -26,6 +26,7 @@ def _get_current_cycle():
         name=f'Assessment {next_sequence}',
         sequence=next_sequence,
         is_current=True,
+        is_locked=False,
     )
 
 
@@ -60,11 +61,11 @@ def admin_logout_view(request):
 @user_passes_test(_is_portal_admin, login_url='admin_portal_login')
 def admin_dashboard_view(request):
     current_cycle = _get_current_cycle()
-    active_stages = list(Stage.objects.filter(is_active=True).order_by('order'))
-    total_stages = len(active_stages)
+    reporting_stages = list(Stage.objects.order_by('order'))
+    active_stages = [stage for stage in reporting_stages if stage.is_active]
 
     stage_stats = []
-    for stage in Stage.objects.order_by('order'):
+    for stage in reporting_stages:
         question_count = Question.objects.filter(stage_ref=stage).count()
         assessments = Assessment.objects.filter(stage_ref=stage)
         total_attempts = assessments.count()
@@ -100,7 +101,7 @@ def admin_dashboard_view(request):
             cycle_assessments = [a for a in exec_assessments if a.cycle_id == cycle.id]
 
             stage_data = []
-            for stage in active_stages:
+            for stage in reporting_stages:
                 stage_attempts = [a for a in cycle_assessments if a.stage_ref_id == stage.id]
                 if stage_attempts:
                     passed = any(a.passed for a in stage_attempts)
@@ -125,6 +126,7 @@ def admin_dashboard_view(request):
                     })
 
             completed_count = sum(1 for sd in stage_data if sd['passed'])
+            total_stages = len(stage_data)
             completion_pct = round((completed_count / total_stages) * 100) if total_stages else 0
 
             exec_rows.append({
@@ -149,6 +151,7 @@ def admin_dashboard_view(request):
         'total_assessments': Assessment.objects.count(),
         'overall_pass_rate': _overall_pass_rate(),
         'current_cycle': current_cycle,
+        'is_cycle_locked': current_cycle.is_locked,
         'stage_stats': stage_stats,
         'difficult_questions': _get_difficult_questions(),
         'executive_status': executive_status,
@@ -160,6 +163,8 @@ def admin_dashboard_view(request):
 
 @user_passes_test(_is_portal_admin, login_url='admin_portal_login')
 def admin_stages_view(request):
+    current_cycle = _get_current_cycle()
+
     if request.method == 'POST':
         edit_stage_id_raw = request.POST.get('edit_stage_id', '').strip()
         name = request.POST.get('name', '').strip()
@@ -227,7 +232,36 @@ def admin_stages_view(request):
         question_count=Count('questions', distinct=True),
         assessment_count=Count('assessments', distinct=True),
     ).order_by('order')
-    return render(request, 'admin_portal/stages.html', {'stages': stages})
+    return render(request, 'admin_portal/stages.html', {
+        'stages': stages,
+        'current_cycle': current_cycle,
+        'is_cycle_locked': current_cycle.is_locked,
+    })
+
+
+@user_passes_test(_is_portal_admin, login_url='admin_portal_login')
+def admin_toggle_cycle_lock_view(request):
+    if request.method != 'POST':
+        return redirect('admin_portal_stages')
+
+    current_cycle = _get_current_cycle()
+    desired_lock = request.POST.get('lock_cycle') == '1'
+
+    if current_cycle.is_locked == desired_lock:
+        return redirect('admin_portal_stages')
+
+    current_cycle.is_locked = desired_lock
+    current_cycle.save(update_fields=['is_locked'])
+
+    if desired_lock:
+        messages.success(
+            request,
+            f'Locked {current_cycle.name}. New attempts and saved progress are now paused across the whole cycle, while historical records stay visible.',
+        )
+    else:
+        messages.success(request, f'Unlocked {current_cycle.name}. Executives can resume assessments in this cycle.')
+
+    return redirect('admin_portal_stages')
 
 
 @user_passes_test(_is_portal_admin, login_url='admin_portal_login')
@@ -244,6 +278,7 @@ def admin_reset_cycle_view(request):
         name=f'Assessment {next_sequence}',
         sequence=next_sequence,
         is_current=True,
+        is_locked=False,
     )
 
     messages.success(request, f'Started {new_cycle.name}. Historical assessment records were preserved.')

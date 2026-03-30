@@ -19,6 +19,7 @@ class AssessmentCycle(models.Model):
 	name = models.CharField(max_length=120)
 	sequence = models.PositiveIntegerField(unique=True)
 	is_current = models.BooleanField(default=False)
+	is_locked = models.BooleanField(default=False)
 	created_at = models.DateTimeField(auto_now_add=True)
 
 	class Meta:

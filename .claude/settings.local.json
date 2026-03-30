@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python manage.py showmigrations competency)",
+      "Bash(python manage.py migrate competency 0009_alter_assessment_cycle)",
+      "Bash(python manage.py makemigrations competency)",
+      "Bash(python manage.py migrate competency)",
+      "Bash(python manage.py check)"
+    ]
+  }
+}

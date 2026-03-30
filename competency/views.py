@@ -26,6 +26,16 @@ def _get_active_stage_orders():
     )
 
 
+def _is_cycle_locked(cycle):
+    return bool(cycle and cycle.is_locked)
+
+
+def _get_stage_by_order(stage_number):
+    if stage_number is None:
+        return None
+    return Stage.objects.filter(order=stage_number).first()
+
+
 def _get_current_cycle():
     current_cycle = AssessmentCycle.objects.filter(is_current=True).order_by('-sequence').first()
     if current_cycle:
@@ -37,6 +47,7 @@ def _get_current_cycle():
         name=f'Assessment {next_sequence}',
         sequence=next_sequence,
         is_current=True,
+        is_locked=False,
     )
     return current_cycle
 
@@ -154,7 +165,7 @@ def _get_next_stage_for_executive(executive, active_stage_orders=None, cycle=Non
 
 
 def _get_stage_label(stage_number):
-    stage_obj = Stage.objects.filter(order=stage_number, is_active=True).first()
+    stage_obj = _get_stage_by_order(stage_number)
     if stage_obj:
         return stage_obj.name
     return f"Stage {stage_number}"
@@ -203,6 +214,30 @@ def _clear_assessment_session(request):
         'assessment_completed',
     ]:
         request.session.pop(key, None)
+
+
+def _render_assessment_unavailable(request, stage_number, error):
+    return render(request, 'assessment/question.html', {
+        'question': None,
+        'error': error,
+        'stage_number': stage_number,
+        'stage_label': _get_stage_label(stage_number),
+        'question_number': 0,
+        'total_questions': 0,
+        'feedback': None,
+        'selected_option_id': None,
+        'assessment_unavailable': True,
+    })
+
+
+def _has_active_assessment_post(request, current_cycle, stage_number):
+    return (
+        request.method == 'POST'
+        and request.session.get('assessment_cycle_id') == current_cycle.id
+        and request.session.get('assessment_stage') == stage_number
+        and bool(request.session.get('assessment_question_ids'))
+        and not request.session.get('assessment_completed')
+    )
 
 
 def _notify_admins_about_completion(assessment, total_questions):
@@ -484,6 +519,7 @@ def dashboard(request):
     current_cycle_assessments = assessments.filter(cycle=current_cycle)
     active_stage_orders = _get_active_stage_orders()
     next_stage = _get_next_stage_for_executive(executive, active_stage_orders, current_cycle)
+    is_cycle_locked = _is_cycle_locked(current_cycle)
     latest_assessment = current_cycle_assessments.first() or assessments.first()
 
     total_attempts = current_cycle_assessments.count()
@@ -491,7 +527,7 @@ def dashboard(request):
     completed_stage_count = current_cycle_assessments.filter(passed=True).values_list('stage', flat=True).distinct().count()
     overall_average_score = current_cycle_assessments.aggregate(avg=Avg('score'))['avg'] or 0
     overall_pass_rate = (pass_count / total_attempts) * 100 if total_attempts else 0
-    can_start_assessment = next_stage is not None
+    can_start_assessment = next_stage is not None and not is_cycle_locked
     is_completed = bool(active_stage_orders) and next_stage is None
     saved_stage = _get_saved_assessment_stage(request, current_cycle, next_stage)
 
@@ -514,6 +550,7 @@ def dashboard(request):
         'next_stage_label': _get_stage_label(next_stage) if next_stage else None,
         'is_completed': is_completed,
         'can_start_assessment': can_start_assessment,
+        'is_cycle_locked': is_cycle_locked,
         'has_saved_progress': saved_stage is not None,
         'has_active_stages': bool(active_stage_orders),
         'latest_assessment': latest_assessment,
@@ -541,6 +578,12 @@ def start_assessment(request):
     next_stage = _get_next_stage_for_executive(executive, cycle=current_cycle)
     if next_stage is None:
         return redirect('dashboard')
+    if _is_cycle_locked(current_cycle) and not _has_active_assessment_post(request, current_cycle, next_stage):
+        return _render_assessment_unavailable(
+            request,
+            next_stage,
+            f'{current_cycle.name} is currently locked. New attempts and saved progress are paused until admin unlocks the cycle.',
+        )
 
     error = None
 
@@ -561,18 +604,16 @@ def start_assessment(request):
     feedback = request.session.get('assessment_feedback')
     selected_option_id = request.session.get('assessment_selected_option_id')
 
+    if total_questions and index >= total_questions and len(answers) != total_questions:
+        _clear_assessment_session(request)
+        return redirect('dashboard')
+
     if total_questions == 0:
-        return render(request, 'assessment/question.html', {
-            'question': None,
-            'error': f"{_get_stage_label(stage_number)} does not have any questions available yet.",
-            'stage_number': stage_number,
-            'stage_label': _get_stage_label(stage_number),
-            'question_number': 0,
-            'total_questions': 0,
-            'feedback': None,
-            'selected_option_id': None,
-            'assessment_unavailable': True,
-        })
+        return _render_assessment_unavailable(
+            request,
+            stage_number,
+            f"{_get_stage_label(stage_number)} does not have any questions available yet.",
+        )
 
     if request.method == 'POST':
         action = request.POST.get('action', '')
@@ -685,7 +726,9 @@ def result(request):
     answer_ids = request.session.get('assessment_answers', [])
 
     if not stage_number or not question_ids or len(answer_ids) != len(question_ids):
-        return redirect('start_assessment')
+        _clear_assessment_session(request)
+        request.session.pop('assessment_record_id', None)
+        return redirect('dashboard')
 
     options_by_id = {
         option.id: option
@@ -713,7 +756,7 @@ def result(request):
     score = round((correct_count / total) * 100, 2) if total else 0
     passed = score >= PASSING_SCORE_PERCENT
 
-    stage_ref = Stage.objects.filter(order=stage_number, is_active=True).first()
+    stage_ref = _get_stage_by_order(stage_number)
     stage_label = stage_ref.name if stage_ref else _get_stage_label(stage_number)
     attempt_number = Assessment.objects.filter(executive=executive, cycle=current_cycle, stage=stage_number).count() + 1
     assessment = Assessment.objects.create(

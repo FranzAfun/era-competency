@@ -38,8 +38,8 @@ class AssessmentAdmin(admin.ModelAdmin):
 
 @admin.register(AssessmentCycle)
 class AssessmentCycleAdmin(admin.ModelAdmin):
-	list_display = ('sequence', 'name', 'is_current', 'created_at')
-	list_filter = ('is_current',)
+	list_display = ('sequence', 'name', 'is_current', 'is_locked', 'created_at')
+	list_filter = ('is_current', 'is_locked')
 	search_fields = ('name',)
 
 
